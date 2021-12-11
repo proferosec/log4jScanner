@@ -38,7 +38,6 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
     Run: func(cmd *cobra.Command, args []string) {
         //ScanCIDR("192.168.1.59/32")
-        time.Sleep(1 * time.Second)
         ScanIP("http://192.168.1.59:8080", "192.168.1.59:5555")
     },
 }
@@ -59,7 +58,7 @@ func init() {
 
 func ScanIP(target_url, server_url string) {
     client := &http.Client{
-        Timeout: 1000 * time.Millisecond,
+        Timeout: 250 * time.Millisecond,
         Transport: &http.Transport{
             TLSHandshakeTimeout:   1 * time.Second,
             ResponseHeaderTimeout: 1 * time.Second,
@@ -80,7 +79,7 @@ func ScanIP(target_url, server_url string) {
     request.Header.Add("X-Api-Version", targetHeader)
     response, err := client.Do(request)
     if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
-        log.Error(err)
+        log.Debug(err)
     }
     if response != nil {
         log.Infof("%s ==> Status code: %d", target_url, response.StatusCode)

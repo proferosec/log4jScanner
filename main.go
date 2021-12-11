@@ -20,7 +20,8 @@ import (
     joonix "github.com/joonix/log"
     log "github.com/sirupsen/logrus"
     "io"
-    "log4j_scanner/cmd"
+    "log4jScanner/cmd"
+    "log4jScanner/utils"
     "os"
     "strings"
 )
@@ -67,15 +68,18 @@ func setupLog(logFormat, logLevel string, file io.Writer) {
 
 // TODO: log to file
 // TODO: add header/pterm
+// TODO: add context/cancel/done when done scanning
 
 func main() {
+    utils.SetVersion(Version)
+    utils.PrintHeader()
     file, err := os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
     defer file.Close()
     if err != nil {
         log.Error("Failed to log to file")
     }
 
-    setupLog("text", "debug", file)
+    setupLog("text", "info", file)
     log.WithFields(log.Fields{"buildTime": BuildTime}).Info("Version: ", Version)
 
     go cmd.Execute()

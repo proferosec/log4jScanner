@@ -24,6 +24,8 @@ import (
 )
 
 // TODO: update all descriptions
+// TODO: update the header for all usages
+// TODO: add commandline flags
 
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
@@ -55,7 +57,7 @@ func init() {
 }
 
 func ScanCIDR() {
-    hosts, _ := Hosts("192.168.1.58/28")
+    hosts, _ := Hosts("192.168.1.58/24")
     ipsChan := make(chan string, 1024)
     ipPortChan := make(chan string, 256)
     //doneChan := make(chan string)
@@ -68,7 +70,7 @@ func ScanCIDR() {
     }
 
     for i := range ipsChan {
-        ScanPorts(i, ipPortChan)
+        go ScanPorts(i, ipPortChan)
         if len(ipsChan) == 0 {
             close(ipsChan)
         }
@@ -76,7 +78,7 @@ func ScanCIDR() {
 }
 
 func ScanPorts(ip string, ipPortChan <-chan string) {
-    log.Debugf("Trying: %s", ip)
+    log.Infof("Trying: %s", ip)
     port := "8080"
     target := fmt.Sprintf("http://%s:%s", ip, port)
     localIP := GetLocalIP()
