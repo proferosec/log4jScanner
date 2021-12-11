@@ -10,6 +10,10 @@ For every response it receives, it will log the sender IP so we can get a list o
 The utility spins up a webserver listening for incoming requests. 
 then, it will open a request for every available port in the range that responds to HTTP/S and send it the exploit.
 
+1. get all IPs in the CIDR
+2. scan each IP for open ports (either complete list, or reduced list)
+3. for any open port, call the `ScanIP` 
+4. log all callbacks (source IP address)
 
 ## test setup
 
