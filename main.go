@@ -60,9 +60,13 @@ func setupLog(logFormat, logLevel string) {
     }
 }
 
+// TODO: log to file
+// TODO: add header/pterm
+
 func main() {
     setupLog("text", "debug")
     log.WithFields(log.Fields{"buildTime": BuildTime}).Info("Version: ", Version)
+
     go cmd.Execute()
 
     StartServer()
