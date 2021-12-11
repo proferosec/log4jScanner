@@ -80,7 +80,7 @@ func ScanIP(target_url, server_url string) {
     request.Header.Add("X-Api-Version", targetHeader)
     response, err := client.Do(request)
     if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
-        log.Fatal(err)
+        log.Error(err)
     }
     if response != nil {
         log.Infof("%s ==> Status code: %d", target_url, response.StatusCode)

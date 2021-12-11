@@ -19,6 +19,7 @@ package main
 import (
     joonix "github.com/joonix/log"
     log "github.com/sirupsen/logrus"
+    "io"
     "log4j_scanner/cmd"
     "os"
     "strings"
@@ -31,7 +32,7 @@ var (
 
 // TODO: add version to the version command
 
-func setupLog(logFormat, logLevel string) {
+func setupLog(logFormat, logLevel string, file io.Writer) {
     switch strings.ToLower(logFormat) {
     case "text":
         {
@@ -49,7 +50,11 @@ func setupLog(logFormat, logLevel string) {
         log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
     }
 
-    log.SetOutput(os.Stdout)
+    if file != nil {
+        log.SetOutput(io.MultiWriter(os.Stdout, file))
+    } else {
+        log.SetOutput(os.Stdout)
+    }
     switch strings.ToLower(logLevel) {
     case "debug":
         log.SetLevel(log.DebugLevel)
@@ -64,7 +69,13 @@ func setupLog(logFormat, logLevel string) {
 // TODO: add header/pterm
 
 func main() {
-    setupLog("text", "debug")
+    file, err := os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+    defer file.Close()
+    if err != nil {
+        log.Error("Failed to log to file")
+    }
+
+    setupLog("text", "debug", file)
     log.WithFields(log.Fields{"buildTime": BuildTime}).Info("Version: ", Version)
 
     go cmd.Execute()

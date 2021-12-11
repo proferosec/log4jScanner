@@ -55,7 +55,7 @@ func init() {
 }
 
 func ScanCIDR() {
-    hosts, _ := Hosts("192.168.1.58/29")
+    hosts, _ := Hosts("192.168.1.58/28")
     ipsChan := make(chan string, 1024)
     ipPortChan := make(chan string, 256)
     //doneChan := make(chan string)
