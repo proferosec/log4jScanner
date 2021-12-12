@@ -80,6 +80,8 @@ func init() {
 	scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
 
 	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
+
+	createPrivateIPBlocks()
 }
 
 func ServerStartOnFlag(ctx context.Context, enable bool) {
@@ -98,7 +100,19 @@ func ScanCIDR(ctx context.Context, cidr string, slow bool) {
 	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
 	// Scan for open ports, if there is an open port, add it to the chan
 	for _, ip := range hosts {
+		// Only scan for private IP addresses. If IP is not private, skip.
+		if !isPrivateIP(ip) {
+			log.Errorf("%s IP adress is not private", ip)
+			continue
+		}
 		ipsChan <- ip
+	}
+
+	if len(ipsChan) == 0 {
+		close(ipsChan)
+		if TCPServer != nil {
+			TCPServer.Stop()
+		}
 	}
 
 	server := GetLocalIP() + ":5555"
@@ -172,5 +186,27 @@ func inc(ip net.IP) {
 		if ip[j] > 0 {
 			break
 		}
+	}
+}
+
+func isPrivateIP(ipS string) bool {
+	ip := net.ParseIP(ipS)
+
+	for _, block := range privateIPs {
+		if block.Contains(ip) {
+			return true
+		}
+	}
+	return false
+
+}
+
+func createPrivateIPBlocks() {
+	for _, cidr := range privateIPBlocks {
+		_, block, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.Error("parse error on %q: %v", cidr, err)
+		}
+		privateIPs = append(privateIPs, block)
 	}
 }
