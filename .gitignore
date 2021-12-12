@@ -2,3 +2,4 @@
 build/
 *.log
 log4jScanner
+release/
