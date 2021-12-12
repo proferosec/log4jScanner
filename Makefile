@@ -48,13 +48,13 @@ build-linux:
 	GOOS=linux GOARCH=amd64 go build -o "build/linux/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 release-windows:
-	zip $(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
+	zip release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
 
 release-darwin:
-	zip $(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
+	zip release/$(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
 
 release-linux:
-	zip $(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
+	zip release/$(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
 
 
 clean:
