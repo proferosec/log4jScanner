@@ -10,7 +10,7 @@ STRESS_QPS=100
 all: clean init build
 
 build: build-windows build-darwin build-linux
-
+	go mod tidy
 test:
 	go test .
 
