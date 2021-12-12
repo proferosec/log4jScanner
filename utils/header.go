@@ -14,5 +14,5 @@ func PrintHeader() {
     s, _ := pterm.DefaultBigText.WithLetters(pterm.NewLettersFromStringWithStyle("Profero", pterm.DefaultBox.TextStyle)).Srender()
     pterm.DefaultCenter.Println(s) // Print BigLetters with the default CenterPrinter
     pterm.DefaultCenter.WithCenterEachLineSeparately().Print("log4jScanner")
-    pterm.DefaultCenter.WithCenterEachLineSeparately().Print(Version)
+    pterm.DefaultCenter.WithCenterEachLineSeparately().Printf("version: %s", Version)
 }

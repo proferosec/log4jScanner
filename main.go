@@ -81,7 +81,7 @@ func main() {
         log.Error("Failed to log to file")
     }
 
-    setupLog("text", "info", file)
+    setupLog("text", "debug", file)
     log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
 
     //cmd.SetVersionTemplate("test")
