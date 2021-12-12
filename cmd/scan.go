@@ -77,7 +77,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
+	scanCmd.Flags().BoolP("server", "s", false, "Use internal TCP server")
 
 	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
 
