@@ -17,53 +17,54 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package main
 
 import (
-    joonix "github.com/joonix/log"
-    log "github.com/sirupsen/logrus"
-    "io"
-    "log4jScanner/cmd"
-    "log4jScanner/utils"
-    "os"
-    "strings"
+	"io"
+	"log4jScanner/cmd"
+	"log4jScanner/utils"
+	"os"
+	"strings"
+
+	joonix "github.com/joonix/log"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
-    Version   string
-    BuildTime string
+	Version   string
+	BuildTime string
 )
 
 // TODO: add version to the version command
 
 func setupLog(logFormat, logLevel string, file io.Writer) {
-    switch strings.ToLower(logFormat) {
-    case "text":
-        {
-            log.SetFormatter(&log.TextFormatter{}) // normal output
-        }
-    case "json":
-        {
-            log.SetFormatter(&log.JSONFormatter{}) // simple json output
-        }
-    case "fluentd":
-        {
-            log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
-        }
-    default:
-        log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
-    }
+	switch strings.ToLower(logFormat) {
+	case "text":
+		{
+			log.SetFormatter(&log.TextFormatter{}) // normal output
+		}
+	case "json":
+		{
+			log.SetFormatter(&log.JSONFormatter{}) // simple json output
+		}
+	case "fluentd":
+		{
+			log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
+		}
+	default:
+		log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
+	}
 
-    if file != nil {
-        log.SetOutput(file)
-    } else {
-        log.Fatal("unable to log to file")
-    }
-    switch strings.ToLower(logLevel) {
-    case "debug":
-        log.SetLevel(log.DebugLevel)
-    case "warning":
-        log.SetLevel(log.WarnLevel)
-    default:
-        log.SetLevel(log.InfoLevel)
-    }
+	if file != nil {
+		log.SetOutput(file)
+	} else {
+		log.Fatal("unable to log to file")
+	}
+	switch strings.ToLower(logLevel) {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "warning":
+		log.SetLevel(log.WarnLevel)
+	default:
+		log.SetLevel(log.InfoLevel)
+	}
 }
 
 // TODO: log to file
@@ -71,20 +72,18 @@ func setupLog(logFormat, logLevel string, file io.Writer) {
 // TODO: add context/cancel/done when done scanning
 
 func main() {
-    Version = "undefined"
-    BuildTime = "undefined"
-    utils.SetVersion(Version)
-    //utils.PrintHeader()
-    file, err := os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-    if err != nil {
-        log.Error("Failed to log to file")
-    }
+	utils.SetVersion(Version)
+	//utils.PrintHeader()
+	file, err := os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Error("Failed to log to file")
+	}
 
-    setupLog("text", "info", file)
-    log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
+	setupLog("text", "info", file)
+	log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
 
-    //cmd.SetVersionTemplate("test")
-    //cmd.SetHelpFunc()
-    cmd.Execute()
-    defer file.Close()
+	//cmd.SetVersionTemplate("test")
+	//cmd.SetHelpFunc()
+	cmd.Execute()
+	defer file.Close()
 }
