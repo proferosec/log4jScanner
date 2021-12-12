@@ -17,13 +17,18 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"net"
+	"sync"
 )
 
 // TODO: update all descriptions
+// TODO: update the header for all usages
+// TODO: add commandline flags
 
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
@@ -36,7 +41,26 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ScanCIDR()
+		enableServer, err := cmd.Flags().GetBool("server")
+		if err != nil {
+			log.Error("server flag error")
+		}
+		// TODO: add cancel context
+		cidr, err := cmd.Flags().GetString("cidr")
+		if err != nil || cidr == "" {
+			log.Error("CIDR flag missing")
+			cmd.Usage()
+			return
+		}
+
+		slow, err := cmd.Flags().GetBool("slow")
+		if err != nil {
+			log.Error("slow flag error")
+		}
+
+		ctx := context.Background()
+		ServerStartOnFlag(ctx, enableServer)
+		ScanCIDR(ctx, cidr, slow)
 	},
 }
 
@@ -47,40 +71,54 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// scanCmd.PersistentFlags().String("foo", "", "A help for foo")
+	scanCmd.PersistentFlags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// scanCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
+
+	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
 }
 
-func ScanCIDR() {
-	hosts, _ := Hosts("192.168.1.58/28")
+func ServerStartOnFlag(ctx context.Context, enable bool) {
+	if enable {
+		StartServer(ctx)
+	}
+}
+
+func ScanCIDR(ctx context.Context, cidr string, slow bool) {
+	hosts, _ := Hosts(cidr)
 	ipsChan := make(chan string, 1024)
 	ipPortChan := make(chan string, 256)
 	//doneChan := make(chan string)
 
-	const concurrentMax = 100
-
+	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
 	// Scan for open ports, if there is an open port, add it to the chan
 	for _, ip := range hosts {
 		ipsChan <- ip
 	}
 
+	server := GetLocalIP() + ":5555"
+
+	var wg sync.WaitGroup
+	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
 	for i := range ipsChan {
-		ScanPorts(i, ipPortChan, false)
+		wg.Add(1)
+		go ScanPorts(i, server, ipPortChan, slow, p, &wg)
 		if len(ipsChan) == 0 {
 			close(ipsChan)
-			close(ipPortChan)
 		}
 	}
+	wg.Wait()
+	TCPServer.Stop()
 }
 
-func ScanPorts(ip string, ipPortChan chan string, slow bool) {
-	log.Debugf("Trying: %s", ip)
+func ScanPorts(ip, server string, ipPortChan chan string, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
 	var ports []int
 
-	// Slow scan will go over all ports from 1 to 63556
+	log.Infof("Trying: %s", ip)
+
+	// Slow scan will go over all ports from 1 to 65535
 	if slow {
 		log.Debugln("Slow scan")
 		ports = make([]int, endPortSlow-startPortSlow+1)
@@ -92,15 +130,13 @@ func ScanPorts(ip string, ipPortChan chan string, slow bool) {
 		ports = topWebPorts
 	}
 
-	localIP := GetLocalIP()
-	log.Debugf("Local IP: %s", localIP)
-	go ScanIP(ipPortChan, localIP+":5555")
-
+	go ScanIP(ipPortChan, server)
 	for _, port := range ports {
 		target := fmt.Sprintf("http://%s:%v", ip, port)
 		ipPortChan <- target
 	}
-
+	p.Increment()
+	wg.Done()
 }
 
 func Hosts(cidr string) ([]string, error) {
