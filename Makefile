@@ -38,7 +38,7 @@ upver:
 	$(GOPATH)/bin/semver up release
 
 build-windows:
-	GOOS=windows GOARCH=amd64 go build -o "build/windows/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
+	GOOS=windows GOARCH=amd64 go build -o "build/windows/$(PROJECT_NAME).exe" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 build-darwin:
 	GOOS=darwin GOARCH=amd64 go build -o "build/darwin/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
@@ -48,7 +48,7 @@ build-linux:
 
 release-windows:
 	mkdir release || true
-	zip -j release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
+	zip -j release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME).exe
 
 release-darwin:
 	mkdir release || true
