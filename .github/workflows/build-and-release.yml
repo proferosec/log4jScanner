@@ -15,10 +15,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@master
-
+      - uses: actions/setup-go@v2
+      
       - name: run make
         run: make
