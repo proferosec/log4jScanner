@@ -37,7 +37,7 @@ var scanCmd = &cobra.Command{
 	Short: "Scan all IPs in the given CIDR",
 	Long: `scan each IP for open ports.
 			By default will scan 10 top ports.
- 			For example: log4jScanner scan --cidr "192.168.0.1/24`,
+ 			For example: log4jScanner scan -s --cidr "192.168.0.1/24`,
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.PrintHeader()
 		enableServer, err := cmd.Flags().GetBool("server")
