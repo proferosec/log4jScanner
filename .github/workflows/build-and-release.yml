@@ -26,7 +26,7 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
-          prerelease: true
-          title: "log4j scanner $VERSION"
+          prerelease: false
+          title: "log4j scanner ${{ env.VERSION }}"
           files: |
             release/*
