@@ -48,15 +48,15 @@ build-linux:
 
 release-windows:
 	mkdir release || true
-	zip release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
+	zip -j release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
 
 release-darwin:
 	mkdir release || true
-	zip release/$(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
+	zip -j release/$(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
 
 release-linux:
 	mkdir release || true
-	zip release/$(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
+	zip -j release/$(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
 
 
 clean:
