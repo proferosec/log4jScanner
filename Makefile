@@ -1,4 +1,4 @@
-PROJECT_NAME=chamber-client
+PROJECT_NAME=log4jscanner
 GOPATH=$(shell go env GOPATH)
 
 VERSION=$(shell $(GOPATH)/bin/semver get release)
