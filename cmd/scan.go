@@ -52,9 +52,15 @@ to quickly create a Cobra application.`,
 			cmd.Usage()
 			return
 		}
+
+		slow, err := cmd.Flags().GetBool("slow")
+		if err != nil {
+			log.Error("slow flag error")
+		}
+
 		ctx := context.Background()
 		ServerStartOnFlag(ctx, enableServer)
-		ScanCIDR(ctx, cidr)
+		ScanCIDR(ctx, cidr, slow)
 	},
 }
 
@@ -70,6 +76,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
+
+	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
 }
 
 func ServerStartOnFlag(ctx context.Context, enable bool) {
@@ -78,7 +86,7 @@ func ServerStartOnFlag(ctx context.Context, enable bool) {
 	}
 }
 
-func ScanCIDR(ctx context.Context, cidr string) {
+func ScanCIDR(ctx context.Context, cidr string, slow bool) {
 	hosts, _ := Hosts(cidr)
 	ipsChan := make(chan string, 1024)
 	ipPortChan := make(chan string, 256)
@@ -91,9 +99,6 @@ func ScanCIDR(ctx context.Context, cidr string) {
 	}
 
 	server := GetLocalIP() + ":5555"
-
-	//TODO: slow flag
-	slow := false
 
 	var wg sync.WaitGroup
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
@@ -114,7 +119,7 @@ func ScanPorts(ip, server string, ipPortChan chan string, slow bool, wg *sync.Wa
 
 	log.Infof("Trying: %s", ip)
 
-	// Slow scan will go over all ports from 1 to 63556
+	// Slow scan will go over all ports from 1 to 65535
 	if slow {
 		log.Debugln("Slow scan")
 		ports = make([]int, endPortSlow-startPortSlow+1)
