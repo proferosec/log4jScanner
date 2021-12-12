@@ -24,3 +24,8 @@ then, it will open a request for every available port in the range that responds
 3. send a request to the target, with the server details
    1. sends a request to the vuln. target, with the callback details of the sever
    2. once gets a callback, logs the ip of the calling request
+
+
+### Tests
+* test against different subnet
+* test for untrusted ssl certs
