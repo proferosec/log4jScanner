@@ -1,5 +1,7 @@
 package cmd
 
+import "net"
+
 const (
 	startPortSlow = 1
 	endPortSlow   = 65535
@@ -13,3 +15,13 @@ var topWebPorts = []int{
 	8989, 8990, 9000, 9080, 9090, 9200, 9300, 9443, 9600, 9700, 9981, 10443, 11371, 12043, 12046, 12443, 13100, 13101,
 	13102, 16080, 18091, 18092,
 }
+
+// Private ip ranges
+var privateIPBlocks = []string{
+	"10.0.0.0/8",     // RFC1918
+	"172.16.0.0/12",  // RFC1918
+	"192.168.0.0/16", // RFC1918
+	"fc00::/7",       // IPv6 unique local addr
+}
+
+var privateIPs []*net.IPNet
