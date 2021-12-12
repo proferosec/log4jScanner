@@ -104,8 +104,7 @@ func ScanCIDR(ctx context.Context, cidr string, slow bool) {
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
 	for i := range ipsChan {
 		wg.Add(1)
-		p.Increment()
-		go ScanPorts(i, server, ipPortChan, slow, &wg)
+		go ScanPorts(i, server, ipPortChan, slow, p, &wg)
 		if len(ipsChan) == 0 {
 			close(ipsChan)
 		}
@@ -114,7 +113,7 @@ func ScanCIDR(ctx context.Context, cidr string, slow bool) {
 	TCPServer.Stop()
 }
 
-func ScanPorts(ip, server string, ipPortChan chan string, slow bool, wg *sync.WaitGroup) {
+func ScanPorts(ip, server string, ipPortChan chan string, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
 	var ports []int
 
 	log.Infof("Trying: %s", ip)
@@ -136,7 +135,7 @@ func ScanPorts(ip, server string, ipPortChan chan string, slow bool, wg *sync.Wa
 		target := fmt.Sprintf("http://%s:%v", ip, port)
 		ipPortChan <- target
 	}
-
+	p.Increment()
 	wg.Done()
 }
 
