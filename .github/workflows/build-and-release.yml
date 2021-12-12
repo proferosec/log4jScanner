@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-release:
-    name: Deploy rules to all organisations
+    name: build-and-release
     runs-on: ubuntu-latest
 
     steps:

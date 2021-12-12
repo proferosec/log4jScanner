@@ -9,7 +9,7 @@ STRESS_QPS=100
 
 all: clean init build
 
-build: build-darwin build-linux
+build: build-windows build-darwin build-linux
 
 test:
 	go test .
@@ -36,16 +36,13 @@ upver:
 	$(GOPATH)/bin/semver up release
 
 build-windows:
-	go mod tidy
 	GOOS=windows GOARCH=amd64 go build -o "build/windows/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 build-darwin:
-	go mod tidy
-	GOOS=darwin  GOARCH=amd64 go build -o "build/darwin/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
+	GOOS=darwin GOARCH=amd64 go build -o "build/darwin/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 build-linux:
-	go mod tidy
-	GOOS=linux   GOARCH=amd64 go build -o "build/linux/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
+	GOOS=linux GOARCH=amd64 go build -o "build/linux/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 clean:
 	rm -rf ./build || true
