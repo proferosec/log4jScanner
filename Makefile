@@ -7,9 +7,12 @@ BUILD_TIME=$(shell TZ=UTC date -u '+%Y-%m-%d_%I:%M:%S%p')
 STRESS_DURATION=1m
 STRESS_QPS=100 
 
-all: clean init build
+all: clean init build release
 
 build: build-windows build-darwin build-linux
+
+release: release-windows release-darwin release-linux
+	mkdir release
 
 test:
 	go test .
@@ -37,15 +40,22 @@ upver:
 
 build-windows:
 	GOOS=windows GOARCH=amd64 go build -o "build/windows/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
-	zip $(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
 
 build-darwin:
 	GOOS=darwin GOARCH=amd64 go build -o "build/darwin/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
-	zip $(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
 
 build-linux:
 	GOOS=linux GOARCH=amd64 go build -o "build/linux/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
+
+release-windows:
+	zip $(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
+
+release-darwin:
+	zip $(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
+
+release-linux:
 	zip $(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
+
 
 clean:
 	rm -rf ./build || true
