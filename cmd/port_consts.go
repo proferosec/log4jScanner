@@ -19,8 +19,10 @@ var topWebPorts = []int{
 // Private ip ranges
 var privateIPBlocks = []string{
 	"10.0.0.0/8",     // RFC1918
+	"127.0.0.0/8",    // IPv4 loopback
 	"172.16.0.0/12",  // RFC1918
 	"192.168.0.0/16", // RFC1918
+	"::1/128",        // IPv6 loopback
 	"fc00::/7",       // IPv6 unique local addr
 }
 
