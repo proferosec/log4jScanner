@@ -70,6 +70,7 @@ func init() {
     // Cobra supports local flags which will only run when this command
     // is called directly, e.g.:
     scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
+    <<<<<<< HEAD
 }
 
 func ServerStartOnFlag(ctx context.Context, enable bool) {
@@ -78,6 +79,16 @@ func ServerStartOnFlag(ctx context.Context, enable bool) {
     }
 }
 
+====== =
+}
+
+func ServerStartOnFlag(ctx context.Context, enable bool) {
+    if enable {
+        StartServer(ctx)
+    }
+}
+
+>>>>>>> 09789baa2207891d31a3f847ead078a9ca28fa1e
 func ScanCIDR(ctx context.Context, cidr string) {
     hosts, _ := Hosts(cidr)
     ipsChan := make(chan string, 1024)
