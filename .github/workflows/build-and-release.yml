@@ -29,4 +29,4 @@ jobs:
           prerelease: true
           title: "log4j scanner ${ VERSION }"
           files: |
-            release/*
+            build/*
