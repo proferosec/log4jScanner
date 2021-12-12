@@ -79,7 +79,9 @@ func init() {
     // is called directly, e.g.:
     scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
 
-    scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
+  	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
+
+	  createPrivateIPBlocks()
 }
 
 func ServerStartOnFlag(ctx context.Context, enable bool) {
@@ -90,33 +92,44 @@ func ServerStartOnFlag(ctx context.Context, enable bool) {
 }
 
 func ScanCIDR(ctx context.Context, cidr string, slow bool) {
-    hosts, _ := Hosts(cidr)
-    ipsChan := make(chan string, 1024)
-    ipPortChan := make(chan string, 256)
-    //doneChan := make(chan string)
+	hosts, _ := Hosts(cidr)
+	ipsChan := make(chan string, 1024)
+	ipPortChan := make(chan string, 256)
+	//doneChan := make(chan string)
 
-    pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
-    // Scan for open ports, if there is an open port, add it to the chan
-    for _, ip := range hosts {
-        ipsChan <- ip
-    }
+	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
+	// Scan for open ports, if there is an open port, add it to the chan
+	for _, ip := range hosts {
+		// Only scan for private IP addresses. If IP is not private, skip.
+		if !isPrivateIP(ip) {
+			log.Errorf("%s IP adress is not private", ip)
+			continue
+		}
+		ipsChan <- ip
+	}
 
-    server := GetLocalIP() + ":5555"
+	if len(ipsChan) == 0 {
+		close(ipsChan)
+		if TCPServer != nil {
+			TCPServer.Stop()
+		}
+	}
 
-    var wg sync.WaitGroup
-    p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
-    for i := range ipsChan {
-        wg.Add(1)
-        go ScanPorts(i, server, ipPortChan, slow, p, &wg)
-        if len(ipsChan) == 0 {
-            close(ipsChan)
-        }
-    }
-    wg.Wait()
-    if TCPServer != nil {
-        TCPServer.Stop()
-    }
-    pterm.Info.Println("Done")
+	server := GetLocalIP() + ":5555"
+
+	var wg sync.WaitGroup
+	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
+	for i := range ipsChan {
+		wg.Add(1)
+		go ScanPorts(i, server, ipPortChan, slow, p, &wg)
+		if len(ipsChan) == 0 {
+			close(ipsChan)
+		}
+	}
+	wg.Wait()
+	if TCPServer != nil {
+		TCPServer.Stop()
+	}
 }
 
 func ScanPorts(ip, server string, ipPortChan chan string, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
@@ -174,4 +187,26 @@ func inc(ip net.IP) {
             break
         }
     }
+}
+
+func isPrivateIP(ipS string) bool {
+	ip := net.ParseIP(ipS)
+
+	for _, block := range privateIPs {
+		if block.Contains(ip) {
+			return true
+		}
+	}
+	return false
+
+}
+
+func createPrivateIPBlocks() {
+	for _, cidr := range privateIPBlocks {
+		_, block, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.Error("parse error on %q: %v", cidr, err)
+		}
+		privateIPs = append(privateIPs, block)
+	}
 }
