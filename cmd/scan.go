@@ -147,14 +147,22 @@ func ScanPorts(
 		log.Debugln("Slow scan")
 		ports = make([]int, endPortSlow-startPortSlow+1)
 		for i := range ports {
+			wg.Add(1)
 			ports[i] = startPortSlow + i
 		}
 	} else if top100 {
 		ports = top100WebPorts
+		for range ports {
+			wg.Add(1)
+		}
+
 	} else { // Fast scan - will go over the ports from the top 10 ports list.
 		ports = top10WebPorts
+		for range ports {
+			wg.Add(1)
+		}
 	}
-	go ScanIP(ipPortChan, server)
+	go ScanIP(ipPortChan, server, wg)
 	for _, port := range ports {
 		target := fmt.Sprintf("http://%s:%v", ip, port)
 		ipPortChan <- target
