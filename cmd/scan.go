@@ -17,10 +17,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+    "context"
     "fmt"
+    "github.com/pterm/pterm"
     log "github.com/sirupsen/logrus"
     "github.com/spf13/cobra"
     "net"
+    "sync"
 )
 
 // TODO: update all descriptions
@@ -38,7 +41,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
     Run: func(cmd *cobra.Command, args []string) {
-        ScanCIDR()
+        enableServer, err := cmd.Flags().GetBool("server")
+        if err != nil {
+            log.Error("server flag error")
+        }
+        // TODO: add cancel context
+        cidr, err := cmd.Flags().GetString("cidr")
+        if err != nil || cidr == "" {
+            log.Error("CIDR flag missing")
+            cmd.Usage()
+            return
+        }
+        ctx := context.Background()
+        ServerStartOnFlag(ctx, enableServer)
+        ScanCIDR(ctx, cidr)
     },
 }
 
@@ -49,41 +65,53 @@ func init() {
 
     // Cobra supports Persistent Flags which will work for this command
     // and all subcommands, e.g.:
-    // scanCmd.PersistentFlags().String("foo", "", "A help for foo")
+    scanCmd.PersistentFlags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 
     // Cobra supports local flags which will only run when this command
     // is called directly, e.g.:
-    // scanCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+    scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
 }
 
-func ScanCIDR() {
-    hosts, _ := Hosts("192.168.1.58/24")
+func ServerStartOnFlag(ctx context.Context, enable bool) {
+    if enable {
+        StartServer(ctx)
+    }
+}
+
+func ScanCIDR(ctx context.Context, cidr string) {
+    hosts, _ := Hosts(cidr)
     ipsChan := make(chan string, 1024)
     ipPortChan := make(chan string, 256)
     //doneChan := make(chan string)
 
-    const concurrentMax = 100
-
+    pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
     // Scan for open ports, if there is an open port, add it to the chan
     for _, ip := range hosts {
         ipsChan <- ip
     }
 
+    server := GetLocalIP() + ":5555"
+
+    var wg sync.WaitGroup
+    p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
     for i := range ipsChan {
-        go ScanPorts(i, ipPortChan)
+        wg.Add(1)
+        p.Increment()
+        go ScanPorts(i, server, ipPortChan, &wg)
         if len(ipsChan) == 0 {
             close(ipsChan)
         }
     }
+    wg.Wait()
+    TCPServer.Stop()
 }
 
-func ScanPorts(ip string, ipPortChan <-chan string) {
+func ScanPorts(ip, server string, ipPortChan <-chan string, wg *sync.WaitGroup) {
     log.Infof("Trying: %s", ip)
     port := "8080"
     target := fmt.Sprintf("http://%s:%s", ip, port)
-    localIP := GetLocalIP()
-    //log.Debugf("Local IP: %s", localIP)
-    ScanIP(target, localIP+":5555")
+    ScanIP(target, server)
+    wg.Done()
 }
 
 func Hosts(cidr string) ([]string, error) {
