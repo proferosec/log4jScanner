@@ -17,13 +17,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-    "context"
-    "fmt"
-    "github.com/pterm/pterm"
-    log "github.com/sirupsen/logrus"
-    "github.com/spf13/cobra"
-    "net"
-    "sync"
+	"context"
+	"fmt"
+	"github.com/pterm/pterm"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"net"
+	"sync"
 )
 
 // TODO: update all descriptions
@@ -32,115 +32,136 @@ import (
 
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
-    Use:   "scan",
-    Short: "A brief description of your command",
-    Long: `A longer description that spans multiple lines and likely contains examples
+	Use:   "scan",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-    Run: func(cmd *cobra.Command, args []string) {
-        enableServer, err := cmd.Flags().GetBool("server")
-        if err != nil {
-            log.Error("server flag error")
-        }
-        // TODO: add cancel context
-        cidr, err := cmd.Flags().GetString("cidr")
-        if err != nil || cidr == "" {
-            log.Error("CIDR flag missing")
-            cmd.Usage()
-            return
-        }
-        ctx := context.Background()
-        ServerStartOnFlag(ctx, enableServer)
-        ScanCIDR(ctx, cidr)
-    },
+	Run: func(cmd *cobra.Command, args []string) {
+		enableServer, err := cmd.Flags().GetBool("server")
+		if err != nil {
+			log.Error("server flag error")
+		}
+		// TODO: add cancel context
+		cidr, err := cmd.Flags().GetString("cidr")
+		if err != nil || cidr == "" {
+			log.Error("CIDR flag missing")
+			cmd.Usage()
+			return
+		}
+		ctx := context.Background()
+		ServerStartOnFlag(ctx, enableServer)
+		ScanCIDR(ctx, cidr)
+	},
 }
 
 func init() {
-    rootCmd.AddCommand(scanCmd)
+	rootCmd.AddCommand(scanCmd)
 
-    // Here you will define your flags and configuration settings.
+	// Here you will define your flags and configuration settings.
 
-    // Cobra supports Persistent Flags which will work for this command
-    // and all subcommands, e.g.:
-    scanCmd.PersistentFlags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	scanCmd.PersistentFlags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 
-    // Cobra supports local flags which will only run when this command
-    // is called directly, e.g.:
-    scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
 }
 
 func ServerStartOnFlag(ctx context.Context, enable bool) {
-    if enable {
-        StartServer(ctx)
-    }
+	if enable {
+		StartServer(ctx)
+	}
 }
 
 func ScanCIDR(ctx context.Context, cidr string) {
-    hosts, _ := Hosts(cidr)
-    ipsChan := make(chan string, 1024)
-    ipPortChan := make(chan string, 256)
-    //doneChan := make(chan string)
+	hosts, _ := Hosts(cidr)
+	ipsChan := make(chan string, 1024)
+	ipPortChan := make(chan string, 256)
+	//doneChan := make(chan string)
 
-    pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
-    // Scan for open ports, if there is an open port, add it to the chan
-    for _, ip := range hosts {
-        ipsChan <- ip
-    }
+	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
+	// Scan for open ports, if there is an open port, add it to the chan
+	for _, ip := range hosts {
+		ipsChan <- ip
+	}
 
-    server := GetLocalIP() + ":5555"
+	server := GetLocalIP() + ":5555"
 
-    var wg sync.WaitGroup
-    p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
-    for i := range ipsChan {
-        wg.Add(1)
-        p.Increment()
-        go ScanPorts(i, server, ipPortChan, &wg)
-        if len(ipsChan) == 0 {
-            close(ipsChan)
-        }
-    }
-    wg.Wait()
-    TCPServer.Stop()
+	//TODO: slow flag
+	slow := false
+
+	var wg sync.WaitGroup
+	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
+	for i := range ipsChan {
+		wg.Add(1)
+		p.Increment()
+		go ScanPorts(i, server, ipPortChan, slow, &wg)
+		if len(ipsChan) == 0 {
+			close(ipsChan)
+		}
+	}
+	wg.Wait()
+	TCPServer.Stop()
 }
 
-func ScanPorts(ip, server string, ipPortChan <-chan string, wg *sync.WaitGroup) {
-    log.Infof("Trying: %s", ip)
-    port := "8080"
-    target := fmt.Sprintf("http://%s:%s", ip, port)
-    ScanIP(target, server)
-    wg.Done()
+func ScanPorts(ip, server string, ipPortChan chan string, slow bool, wg *sync.WaitGroup) {
+	var ports []int
+
+	log.Infof("Trying: %s", ip)
+
+	// Slow scan will go over all ports from 1 to 63556
+	if slow {
+		log.Debugln("Slow scan")
+		ports = make([]int, endPortSlow-startPortSlow+1)
+		for i := range ports {
+			ports[i] = startPortSlow + i
+		}
+		// Fast scan - will go over the ports from the input ports list.
+	} else {
+		ports = topWebPorts
+	}
+
+	go ScanIP(ipPortChan, server)
+	for _, port := range ports {
+		target := fmt.Sprintf("http://%s:%v", ip, port)
+		ipPortChan <- target
+	}
+
+	wg.Done()
 }
 
 func Hosts(cidr string) ([]string, error) {
-    ip, ipnet, err := net.ParseCIDR(cidr)
-    if err != nil {
-        return nil, err
-    }
+	ip, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, err
+	}
 
-    var ips []string
-    for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-        ips = append(ips, ip.String())
-    }
+	var ips []string
+	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+		ips = append(ips, ip.String())
+	}
 
-    // remove network address and broadcast address
-    lenIPs := len(ips)
-    switch {
-    case lenIPs < 2:
-        return ips, nil
+	// remove network address and broadcast address
+	lenIPs := len(ips)
+	switch {
+	case lenIPs < 2:
+		return ips, nil
 
-    default:
-        return ips[1 : len(ips)-1], nil
-    }
+	default:
+		return ips[1 : len(ips)-1], nil
+	}
 }
 
 func inc(ip net.IP) {
-    for j := len(ip) - 1; j >= 0; j-- {
-        ip[j]++
-        if ip[j] > 0 {
-            break
-        }
-    }
+	for j := len(ip) - 1; j >= 0; j-- {
+		ip[j]++
+		if ip[j] > 0 {
+			break
+		}
+	}
 }
