@@ -86,31 +86,42 @@ func ServerStartOnFlag(ctx context.Context, enable bool) {
 	}
 }
 
-func ScanCIDR(ctx context.Context, cidr string, slow bool) {
-	hosts, _ := Hosts(cidr)
-	ipsChan := make(chan string, 1024)
-	ipPortChan := make(chan string, 256)
-	//doneChan := make(chan string)
+}
 
-	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
-	// Scan for open ports, if there is an open port, add it to the chan
-	for _, ip := range hosts {
-		ipsChan <- ip
-	}
+func ServerStartOnFlag(ctx context.Context, enable bool) {
+    if enable {
+        StartServer(ctx)
+    }
+}
 
-	server := GetLocalIP() + ":5555"
+func ScanCIDR(ctx context.Context, cidr string) {
+    hosts, _ := Hosts(cidr)
+    ipsChan := make(chan string, 1024)
+    ipPortChan := make(chan string, 256)
+    //doneChan := make(chan string)
 
-	var wg sync.WaitGroup
-	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
-	for i := range ipsChan {
-		wg.Add(1)
-		go ScanPorts(i, server, ipPortChan, slow, p, &wg)
-		if len(ipsChan) == 0 {
-			close(ipsChan)
-		}
-	}
-	wg.Wait()
-	TCPServer.Stop()
+    pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
+    // Scan for open ports, if there is an open port, add it to the chan
+    for _, ip := range hosts {
+        ipsChan <- ip
+    }
+
+    server := GetLocalIP() + ":5555"
+
+    var wg sync.WaitGroup
+    p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
+    for i := range ipsChan {
+        wg.Add(1)
+        p.Increment()
+        go ScanPorts(i, server, ipPortChan, &wg)
+        if len(ipsChan) == 0 {
+            close(ipsChan)
+        }
+    }
+    wg.Wait()
+    if TCPServer != nil {
+        TCPServer.Stop()
+    }
 }
 
 func ScanPorts(ip, server string, ipPortChan chan string, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
