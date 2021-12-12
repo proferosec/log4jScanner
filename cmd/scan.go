@@ -34,13 +34,10 @@ import (
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
 	Use:   "scan",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Scan all IPs in the given CIDR",
+	Long: `scan each IP for open ports.
+			By default will scan 10 top ports.
+ 			For example: log4jScanner scan --cidr "192.168.0.1/24`,
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.PrintHeader()
 		enableServer, err := cmd.Flags().GetBool("server")
@@ -55,6 +52,11 @@ to quickly create a Cobra application.`,
 			return
 		}
 
+		top100, err := cmd.Flags().GetBool("top100")
+		if err != nil {
+			log.Error("top100 flag error")
+		}
+
 		slow, err := cmd.Flags().GetBool("slow")
 		if err != nil {
 			log.Error("slow flag error")
@@ -62,7 +64,7 @@ to quickly create a Cobra application.`,
 
 		ctx := context.Background()
 		ServerStartOnFlag(ctx, enableServer)
-		ScanCIDR(ctx, cidr, slow)
+		ScanCIDR(ctx, cidr, top100, slow)
 	},
 }
 
@@ -77,9 +79,11 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	scanCmd.Flags().BoolP("server", "s", false, "Help message for toggle")
+	scanCmd.Flags().BoolP("server", "s", false, "Use internal TCP server")
 
-	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all ports between 1-65535")
+	scanCmd.Flags().Bool("top100", false, "top100 will scan the top 100 ports")
+
+	scanCmd.Flags().Bool("slow", false, "Slow scan will scan all possible ports")
 
 	createPrivateIPBlocks()
 }
@@ -91,7 +95,7 @@ func ServerStartOnFlag(ctx context.Context, enable bool) {
 	}
 }
 
-func ScanCIDR(ctx context.Context, cidr string, slow bool) {
+func ScanCIDR(ctx context.Context, cidr string, top100, slow bool) {
 	hosts, _ := Hosts(cidr)
 	ipsChan := make(chan string, 1024)
 	ipPortChan := make(chan string, 256)
@@ -121,7 +125,7 @@ func ScanCIDR(ctx context.Context, cidr string, slow bool) {
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
 	for i := range ipsChan {
 		wg.Add(1)
-		go ScanPorts(i, server, ipPortChan, slow, p, &wg)
+		go ScanPorts(i, server, ipPortChan, top100, slow, p, &wg)
 		if len(ipsChan) == 0 {
 			close(ipsChan)
 		}
@@ -132,7 +136,8 @@ func ScanCIDR(ctx context.Context, cidr string, slow bool) {
 	}
 }
 
-func ScanPorts(ip, server string, ipPortChan chan string, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
+func ScanPorts(
+	ip, server string, ipPortChan chan string, top100, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
 	var ports []int
 
 	log.Infof("Trying: %s", ip)
@@ -144,9 +149,10 @@ func ScanPorts(ip, server string, ipPortChan chan string, slow bool, p *pterm.Pr
 		for i := range ports {
 			ports[i] = startPortSlow + i
 		}
-		// Fast scan - will go over the ports from the input ports list.
-	} else {
-		ports = topWebPorts
+	} else if top100 {
+		ports = top100WebPorts
+	} else { // Fast scan - will go over the ports from the top 10 ports list.
+		ports = top10WebPorts
 	}
 	go ScanIP(ipPortChan, server)
 	for _, port := range ports {
