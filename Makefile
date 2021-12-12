@@ -12,7 +12,6 @@ all: clean init build release
 build: build-windows build-darwin build-linux
 
 release: release-windows release-darwin release-linux
-	mkdir release
 
 test:
 	go test .
@@ -48,12 +47,15 @@ build-linux:
 	GOOS=linux GOARCH=amd64 go build -o "build/linux/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
 release-windows:
+	mkdir release || true
 	zip release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME)
 
 release-darwin:
+	mkdir release || true
 	zip release/$(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
 
 release-linux:
+	mkdir release || true
 	zip release/$(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
 
 
