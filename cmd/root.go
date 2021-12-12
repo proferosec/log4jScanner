@@ -32,7 +32,7 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "log4jScanner",
 	Short: "Root command",
-	Long: `og4jScanner tool will scan a subnet for web servers and will try to send the JDNI exploit to each one. 
+	Long: `log4jScanner tool will scan a subnet for web servers and will try to send the JNDI exploit to each one. 
 			For every response it receives, it will log the sender IP so we can get a list of the vulnerable servers.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
