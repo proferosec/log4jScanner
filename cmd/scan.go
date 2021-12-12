@@ -22,6 +22,7 @@ import (
     "github.com/pterm/pterm"
     log "github.com/sirupsen/logrus"
     "github.com/spf13/cobra"
+    "log4jScanner/utils"
     "net"
     "sync"
 )
@@ -41,6 +42,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
     Run: func(cmd *cobra.Command, args []string) {
+        utils.PrintHeader()
         enableServer, err := cmd.Flags().GetBool("server")
         if err != nil {
             log.Error("server flag error")
@@ -134,11 +136,11 @@ func ScanPorts(ip, server string, ipPortChan chan string, slow bool, wg *sync.Wa
         ports = topWebPorts
     }
 
-    go ScanIP(ipPortChan, server)
     for _, port := range ports {
         target := fmt.Sprintf("http://%s:%v", ip, port)
         ipPortChan <- target
     }
+    go ScanIP(ipPortChan, server)
     wg.Done()
 }
 
