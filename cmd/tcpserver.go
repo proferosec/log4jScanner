@@ -2,7 +2,6 @@ package cmd
 
 import (
     "context"
-    "fmt"
     "github.com/pterm/pterm"
     log "github.com/sirupsen/logrus"
     "io"
@@ -14,20 +13,15 @@ import (
 
 var TCPServer *Server
 
-func StartServer(ctx context.Context, server_url string) {
+func StartServer(ctx context.Context, serverUrl string) {
     // TODO: make port configurable
-    if server_url != "" && !strings.Contains(server_url, ":") {
+    if serverUrl != "" && !strings.Contains(serverUrl, ":") {
         pterm.Error.Println("server url does not match HOST:PORT")
         return
     }
-    if server_url == "" {
-        const port = "5555"
-        ipaddrs := GetLocalIP()
-        server_url = fmt.Sprintf("%s:%s", ipaddrs, port)
-    }
-    pterm.Info.Println("Starting internal TCP server on", server_url)
-    log.Info("Starting TCP server on", server_url)
-    TCPServer = NewServer(server_url)
+    pterm.Info.Println("Starting internal TCP server on", serverUrl)
+    log.Info("Starting TCP server on ", serverUrl)
+    TCPServer = NewServer(serverUrl)
 }
 
 func ReportIP(conn net.Conn) {
@@ -58,12 +52,15 @@ func NewServer(addr string) *Server {
 }
 
 func (s *Server) Stop() {
+    spinnerSuccess, _ := pterm.DefaultSpinner.Start("Stopping TCP server")
+    time.Sleep(5 * time.Second)
     if s == nil || s.listener == nil {
         return
     }
     close(s.quit)
     s.listener.Close()
     s.wg.Wait()
+    spinnerSuccess.Success()
 }
 
 func (s *Server) serve() {
@@ -93,7 +90,7 @@ func (s *Server) serve() {
 
 func (s *Server) handleConection(conn net.Conn) {
     defer conn.Close()
-    conn.SetDeadline(time.Now().Add(200 * time.Millisecond))
+    conn.SetDeadline(time.Now().Add(1000 * time.Millisecond))
     buf := make([]byte, 2048)
     for {
         n, err := conn.Read(buf)

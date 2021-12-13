@@ -66,9 +66,15 @@ var scanCmd = &cobra.Command{
             log.Error("slow flag error")
         }
 
+        if serverUrl == "" {
+            const port = "5555"
+            ipaddrs := GetLocalIP()
+            serverUrl = fmt.Sprintf("%s:%s", ipaddrs, port)
+        }
+
         ctx := context.Background()
         ServerStartOnFlag(ctx, disableServer, serverUrl)
-        ScanCIDR(ctx, cidr, top100, slow)
+        ScanCIDR(ctx, cidr, top100, slow, serverUrl)
     },
 }
 
@@ -94,40 +100,34 @@ func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string) {
     }
 }
 
-func ScanCIDR(ctx context.Context, cidr string, top100, slow bool) {
+func ScanCIDR(ctx context.Context, cidr string, top100, slow bool, serverUrl string) {
     hosts, _ := Hosts(cidr)
-    ipsChan := make(chan string, 1024)
-    ipPortChan := make(chan string, 256)
-    //doneChan := make(chan string)
 
     pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
     // Scan for open ports, if there is an open port, add it to the chan
-    for _, ip := range hosts {
-        // Only scan for private IP addresses. If IP is not private, skip.
-        if !isPrivateIP(ip) {
-            log.Errorf("%s IP adress is not private", ip)
-            continue
-        }
-        ipsChan <- ip
-    }
 
-    if len(ipsChan) == 0 {
-        close(ipsChan)
+    // if there are no IPs in the hosts lists, close the TCP server
+    if len(hosts) == 0 {
+        pterm.Error.Println("No IP addresses in CIDR")
         if TCPServer != nil {
             TCPServer.Stop()
         }
+        return
     }
 
-    server := GetLocalIP() + ":5555"
-
     var wg sync.WaitGroup
-    p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
-    for i := range ipsChan {
-        wg.Add(1)
-        go ScanPorts(i, server, ipPortChan, top100, slow, p, &wg)
-        if len(ipsChan) == 0 {
-            close(ipsChan)
+    p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
+    const maxGoroutines = 500
+    cnt := 0
+    for _, i := range hosts {
+        cnt += 1
+        // TODO: replace ports flag with an ENUM
+        if cnt > maxGoroutines {
+            wg.Wait()
+            cnt = 0
         }
+        wg.Add(1)
+        go ScanPorts(i, serverUrl, top100, slow, p, &wg)
     }
     wg.Wait()
     if TCPServer != nil {
@@ -135,7 +135,7 @@ func ScanCIDR(ctx context.Context, cidr string, top100, slow bool) {
     }
 }
 
-func ScanPorts(ip, server string, ipPortChan chan string, top100, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
+func ScanPorts(ip, server string, top100, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
     var ports []int
 
     log.Infof("Trying: %s", ip)
@@ -152,11 +152,13 @@ func ScanPorts(ip, server string, ipPortChan chan string, top100, slow bool, p *
     } else { // Fast scan - will go over the ports from the top 10 ports list.
         ports = top10WebPorts
     }
-    go ScanIP(ipPortChan, server)
+    wgPorts := sync.WaitGroup{}
     for _, port := range ports {
         target := fmt.Sprintf("http://%s:%v", ip, port)
-        ipPortChan <- target
+        wgPorts.Add(1)
+        go ScanIP(target, server, &wgPorts)
     }
+    wgPorts.Wait()
 
     p.Increment()
     wg.Done()
@@ -170,6 +172,11 @@ func Hosts(cidr string) ([]string, error) {
 
     var ips []string
     for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+        // Only scan for private IP addresses. If IP is not private, skip.
+        if !isPrivateIP(ip) {
+            log.Errorf("%s IP adress is not private", ip)
+            continue
+        }
         ips = append(ips, ip.String())
     }
 
@@ -193,8 +200,8 @@ func inc(ip net.IP) {
     }
 }
 
-func isPrivateIP(ipS string) bool {
-    ip := net.ParseIP(ipS)
+func isPrivateIP(ip net.IP) bool {
+    //ip := net.ParseIP(ipS)
 
     for _, block := range privateIPs {
         if block.Contains(ip) {
