@@ -143,7 +143,7 @@ func ScanPorts(ip, server string, portsFlag string, p *pterm.ProgressbarPrinter,
 		for i := range ports {
 			ports[i] = startPortSlow + i
 		}
-	} else if portsFlag == "top100" {
+	} else if portsFlag == "top100" { // top100 will go over to 100 ports
 		ports = top100WebPorts
 	} else { // Fast scan - will go over the ports from the top 10 ports list.
 		ports = top10WebPorts
