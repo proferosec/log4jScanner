@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"log4jScanner/utils"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -153,6 +155,12 @@ func ScanPorts(ip, server string, portsFlag string, p *pterm.ProgressbarPrinter,
 		target := fmt.Sprintf("http://%s:%v", ip, port)
 		wgPorts.Add(1)
 		go ScanIP(target, server, &wgPorts)
+
+		if isPortHttps(port) || strings.Contains(strconv.Itoa(port), "443") {
+			target := fmt.Sprintf("https://%s:%v", ip, port)
+			wgPorts.Add(1)
+			go ScanIP(target, server, &wgPorts)
+		}
 	}
 	wgPorts.Wait()
 
@@ -216,4 +224,13 @@ func createPrivateIPBlocks() {
 		}
 		privateIPs = append(privateIPs, block)
 	}
+}
+
+func isPortHttps(port int) bool {
+	for _, p := range commonHttpsPorts {
+		if port == p {
+			return true
+		}
+	}
+	return false
 }
