@@ -27,7 +27,7 @@ You can use the tool to test for the top 100 HTTP\S ports using the `--top100` f
 1. Vuln. target: 
    1. `docker run --rm --name vulnerable-app -p 8080:8080 ghcr.io/christophetd/log4shell-vulnerable-app`
 2. spin a server for incoming requests
-   1. `log4jScanner scanip -s --cidr DOCKER-RANGE`
+   1. `log4jScanner scanip --cidr DOCKER-RANGE`
 3. send a request to the target, with the server details
    1. sends a request to the vuln. target, with the callback details of the sever
    2. once gets a callback, logs the ip of the calling request
