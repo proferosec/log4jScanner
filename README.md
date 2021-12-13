@@ -2,27 +2,32 @@
 
 ## Goals
 
-this tool will scan a subnet for web servers and will try to send the JDNI exploit to each one. 
-For every response it receives, it will log the sender IP so we can get a list of the vulnerable servers. 
+This tool provides you with the ability to scan internal (only) subnets for vulnerable log4j web services. It will try to send a JNDI payload to each one (via a User-Agent string and a HTTP header) to a list of common HTTP/S ports. 
+For every response it receives, it will log the responding host IP so we can get a list of the vulnerable servers. 
 
-## Design
+## Basic usage
+Download the tool for your specific platform (Windows, Linux or Mac) from the [release](https://github.com/proferosec/log4jScanner/releases/tag/latest) page.
+To run the tool, make sure port 5555 on the host is available, and specify the subnet to scan (it is possible to configure a separate address using the `--server` flag):
 
-The utility spins up a webserver listening for incoming requests. 
-then, it will open a request for every available port in the range that responds to HTTP/S and send it the exploit.
 
-1. get all IPs in the CIDR
-2. scan each IP for open ports (either complete list, or reduced list)
-3. for any open port, call the `ScanIP` 
-4. log all callbacks (source IP address)
-5. the callback server is listening to `localhost:5555`
-6. if the `--slow` flag is used, all ports are scanned, for each IP
+`
+log4jscanner.exe scan --cidr 192.168.7.0/24
+`
+
+
+This will test the top10 HTTP\S ports on the hosts in the subnet and print the volnurable hosts to the screen and will generate a log in the same location as the binary including all the attempts (both vulnerable and non-volnerable).
+In order to identify which hosts are volnerable just lookup the word `SUCCESS` in the log.
+
+## Additional usage options
+You can use the tool to test for the top 100 HTTP\S ports using the `--top100` flag, or for the entire port range using `--slow` - Keep in mind, using `--slow` will take time to complete.
+
 
 ## test setup
 
 1. Vuln. target: 
    1. `docker run --rm --name vulnerable-app -p 8080:8080 ghcr.io/christophetd/log4shell-vulnerable-app`
 2. spin a server for incoming requests
-   1. `log4jScanner scanip -s --cidr 192.168.1.0/24`
+   1. `log4jScanner scanip -s --cidr DOCKER-RANGE`
 3. send a request to the target, with the server details
    1. sends a request to the vuln. target, with the callback details of the sever
    2. once gets a callback, logs the ip of the calling request
