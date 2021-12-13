@@ -30,7 +30,13 @@ log4jscanner.exe scan --cidr 192.168.7.0/24 --ports slow
 
 
 ## test setup
+Run the docker compose in [here](https://github.com/proferosec/log4jScanner/tree/main/docker):
 
+`docker-compose up -d`
+
+This will provide you with a container vulnerable on port 8080 for HTTP and port 8443 for HTTPS.
+
+Alternativley, you can also run this:
 1. Vuln. target: 
    1. `docker run --rm --name vulnerable-app -p 8080:8080 ghcr.io/christophetd/log4shell-vulnerable-app`
 2. spin a server for incoming requests
