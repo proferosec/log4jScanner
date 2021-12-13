@@ -19,7 +19,14 @@ This will test the top10 HTTP\S ports on the hosts in the subnet and print the v
 In order to identify which hosts are volnerable just lookup the word `SUCCESS` in the log.
 
 ## Additional usage options
-You can use the tool to test for the top 100 HTTP\S ports using the `--top100` flag, or for the entire port range using `--slow` - Keep in mind, using `--slow` will take time to complete.
+You can use the tool to test for the top 100 HTTP\S ports using the `ports --top100` flag, or for the entire port range using `ports --slow` - Keep in mind, using `ports --slow` will take time to complete.
+
+
+```
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports top100
+
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports slow
+```
 
 
 ## test setup
