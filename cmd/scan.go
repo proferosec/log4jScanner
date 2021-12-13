@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/pterm/pterm"
@@ -72,8 +74,9 @@ var scanCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		successChan := make(chan string)
-		ServerStartOnFlag(ctx, disableServer, serverUrl, successChan)
+		if !disableServer {
+			StartServer(ctx, serverUrl)
+		}
 		ScanCIDR(ctx, cidr, ports, serverUrl)
 	},
 }
@@ -94,10 +97,7 @@ func init() {
 	createPrivateIPBlocks()
 }
 
-func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string, successChan chan string) {
-	if !disabled {
-		StartServer(ctx, server_url, successChan)
-	}
+func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string) {
 }
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
@@ -131,56 +131,61 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 
 	resChan := make(chan string, 10000)
 
-	var wg sync.WaitGroup
-	//p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
-	const maxGoroutines = 100
+	//var wg sync.WaitGroup
+	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
+	const maxGoroutines = 50
 	cnt := 0
 	for _, i := range hosts {
 		cnt += 1
 		// TODO: replace ports flag with an ENUM
-		if cnt > maxGoroutines {
-			wg.Wait()
-			cnt = 0
-		}
-		wg.Add(1)
-		go ScanPorts(i, serverUrl, ports, nil, &wg, resChan)
+		//if cnt > maxGoroutines {
+		//wg.Wait()
+		//cnt = 0
+		//}
+		//wg.Add(1)
+		p.Increment()
+		ScanPorts(i, serverUrl, ports, resChan)
 	}
-	wg.Wait()
+	//wg.Wait()
 	if TCPServer != nil {
 		TCPServer.Stop()
 	}
-	close(resChan)
 	PrintResults(resChan)
 }
 
 func PrintResults(resChan chan string) {
+	pterm.Println()
+	pterm.DefaultHeader.WithFullWidth().Println("Results")
+	close(resChan)
 	for res := range resChan {
 		pterm.Info.Println(res)
 		log.Debugf(":%s", res)
 	}
+	close(TCPServer.sChan)
+	for suc := range TCPServer.sChan {
+		pterm.Success.Println(suc)
+	}
 }
 
-func ScanPorts(ip, server string, ports []int, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup, resChan chan string) {
+func ScanPorts(ip, server string, ports []int, resChan chan string) {
 
 	log.Infof("Trying: %s", ip)
 
 	// Slow scan will go over all ports from 1 to 65535
 	wgPorts := sync.WaitGroup{}
 	for _, port := range ports {
-		target := fmt.Sprintf("http://%s:%v", ip, port)
 		wgPorts.Add(1)
-		go ScanIP(target, server, &wgPorts)
 
+		var target string
 		if isPortHttps(port) || strings.Contains(strconv.Itoa(port), "443") {
-			target := fmt.Sprintf("https://%s:%v", ip, port)
-			wgPorts.Add(1)
-			go ScanIP(target, server, &wgPorts)
+			target = fmt.Sprintf("https://%s:%v", ip, port)
+		} else {
+			target = fmt.Sprintf("http://%s:%v", ip, port)
 		}
+		go ScanIP(target, server, &wgPorts, resChan)
 	}
 	wgPorts.Wait()
 
-	//p.Increment()
-	wg.Done()
 }
 
 func Hosts(cidr string) ([]string, error) {
