@@ -33,17 +33,25 @@ var scanCmd = &cobra.Command{
     Short: "Scan all IPs in the given CIDR",
     Long: `scan each IP for open ports.
 			By default will scan 10 top ports.
- 			For example: log4jScanner scan -s --cidr "192.168.0.1/24`,
+ 			For example: log4jScanner scan --cidr "192.168.0.1/24`,
     Run: func(cmd *cobra.Command, args []string) {
         utils.PrintHeader()
-        enableServer, err := cmd.Flags().GetBool("server")
+        disableServer, err := cmd.Flags().GetBool("noserver")
         if err != nil {
             log.Error("server flag error")
+            cmd.Usage()
+            return
         }
         // TODO: add cancel context
         cidr, err := cmd.Flags().GetString("cidr")
         if err != nil || cidr == "" {
             fmt.Println("CIDR flag missing")
+            cmd.Usage()
+            return
+        }
+        serverUrl, err := cmd.Flags().GetString("server")
+        if err != nil {
+            fmt.Println("Error in server flag")
             cmd.Usage()
             return
         }
@@ -59,7 +67,7 @@ var scanCmd = &cobra.Command{
         }
 
         ctx := context.Background()
-        ServerStartOnFlag(ctx, enableServer)
+        ServerStartOnFlag(ctx, disableServer, serverUrl)
         ScanCIDR(ctx, cidr, top100, slow)
     },
 }
@@ -71,23 +79,18 @@ func init() {
 
     // Cobra supports Persistent Flags which will work for this command
     // and all subcommands, e.g.:
-    scanCmd.PersistentFlags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
-
-    // Cobra supports local flags which will only run when this command
-    // is called directly, e.g.:
-    scanCmd.Flags().BoolP("server", "s", false, "Use internal TCP server")
-
+    scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
+    scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
+    scanCmd.Flags().BoolP("noserver", "", false, "Do not use the internal TCP server, this overrides the server flag if present")
     scanCmd.Flags().Bool("top100", false, "top100 will scan the top 100 ports")
-
     scanCmd.Flags().Bool("slow", false, "Slow scan will scan all possible ports")
 
     createPrivateIPBlocks()
 }
 
-func ServerStartOnFlag(ctx context.Context, enable bool) {
-    if enable {
-        pterm.Info.Println("Starting internal TCP server")
-        StartServer(ctx)
+func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string) {
+    if !disabled {
+        StartServer(ctx, server_url)
     }
 }
 
