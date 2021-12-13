@@ -32,8 +32,6 @@ var (
     BuildTime string
 )
 
-// TODO: add version to the version command
-
 func setupLog(logFormat, logLevel string, file io.Writer) {
     switch strings.ToLower(logFormat) {
     case "text":
@@ -66,10 +64,6 @@ func setupLog(logFormat, logLevel string, file io.Writer) {
         log.SetLevel(log.InfoLevel)
     }
 }
-
-// TODO: log to file
-// TODO: add header/pterm
-// TODO: add context/cancel/done when done scanning
 
 func main() {
     utils.SetVersion(Version)
