@@ -38,6 +38,11 @@ var scanCmd = &cobra.Command{
 	Long: `Scan each IP for open ports. By default will scan 10 top ports.
 For example: log4jScanner scan --cidr "192.168.0.1/24`,
 	Run: func(cmd *cobra.Command, args []string) {
+		nocolors, err := cmd.Flags().GetBool("nocolor")
+		if nocolors {
+			pterm.DisableColor()
+		}
+
 		utils.PrintHeader()
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
@@ -90,13 +95,11 @@ func init() {
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
+	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By efault scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
 
 	createPrivateIPBlocks()
-}
-
-func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string) {
 }
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
@@ -164,6 +167,7 @@ func PrintResults(resChan chan string) {
 	for suc := range TCPServer.sChan {
 		pterm.Success.Println(suc)
 	}
+	// vuln,ip,port,status_code
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
