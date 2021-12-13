@@ -2,7 +2,7 @@
 
 ## Goals
 
-This tool provides you the ability to scan internal (only) subnets for vulnerable log4j services running. It will try to send a JDNI payload to each one (via the User-agent string and a HTTP header. 
+This tool provides you with the ability to scan internal (only) subnets for vulnerable log4j web services. It will try to send a JNDI payload to each one (via a User-Agent string and a HTTP header) to a list of common HTTP/S ports. 
 For every response it receives, it will log the responding host IP so we can get a list of the vulnerable servers. 
 
 ## Basic usage
