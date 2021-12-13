@@ -33,17 +33,25 @@ var scanCmd = &cobra.Command{
     Short: "Scan all IPs in the given CIDR",
     Long: `scan each IP for open ports.
 			By default will scan 10 top ports.
- 			For example: log4jScanner scan -s --cidr "192.168.0.1/24`,
+ 			For example: log4jScanner scan --cidr "192.168.0.1/24`,
     Run: func(cmd *cobra.Command, args []string) {
         utils.PrintHeader()
-        enableServer, err := cmd.Flags().GetBool("server")
+        disableServer, err := cmd.Flags().GetBool("noserver")
         if err != nil {
             log.Error("server flag error")
+            cmd.Usage()
+            return
         }
         // TODO: add cancel context
         cidr, err := cmd.Flags().GetString("cidr")
         if err != nil || cidr == "" {
             fmt.Println("CIDR flag missing")
+            cmd.Usage()
+            return
+        }
+        serverUrl, err := cmd.Flags().GetString("server")
+        if err != nil {
+            fmt.Println("Error in server flag")
             cmd.Usage()
             return
         }
@@ -58,9 +66,15 @@ var scanCmd = &cobra.Command{
             log.Error("slow flag error")
         }
 
+        if serverUrl == "" {
+            const port = "5555"
+            ipaddrs := GetLocalIP()
+            serverUrl = fmt.Sprintf("%s:%s", ipaddrs, port)
+        }
+
         ctx := context.Background()
-        ServerStartOnFlag(ctx, enableServer)
-        ScanCIDR(ctx, cidr, top100, slow)
+        ServerStartOnFlag(ctx, disableServer, serverUrl)
+        ScanCIDR(ctx, cidr, top100, slow, serverUrl)
     },
 }
 
@@ -71,60 +85,49 @@ func init() {
 
     // Cobra supports Persistent Flags which will work for this command
     // and all subcommands, e.g.:
-    scanCmd.PersistentFlags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
-
-    // Cobra supports local flags which will only run when this command
-    // is called directly, e.g.:
-    scanCmd.Flags().BoolP("server", "s", false, "Use internal TCP server")
-
+    scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
+    scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
+    scanCmd.Flags().BoolP("noserver", "", false, "Do not use the internal TCP server, this overrides the server flag if present")
     scanCmd.Flags().Bool("top100", false, "top100 will scan the top 100 ports")
-
     scanCmd.Flags().Bool("slow", false, "Slow scan will scan all possible ports")
 
     createPrivateIPBlocks()
 }
 
-func ServerStartOnFlag(ctx context.Context, enable bool) {
-    if enable {
-        pterm.Info.Println("Starting internal TCP server")
-        StartServer(ctx)
+func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string) {
+    if !disabled {
+        StartServer(ctx, server_url)
     }
 }
 
-func ScanCIDR(ctx context.Context, cidr string, top100, slow bool) {
+func ScanCIDR(ctx context.Context, cidr string, top100, slow bool, serverUrl string) {
     hosts, _ := Hosts(cidr)
-    ipsChan := make(chan string, 1024)
-    ipPortChan := make(chan string, 256)
-    //doneChan := make(chan string)
 
     pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
     // Scan for open ports, if there is an open port, add it to the chan
-    for _, ip := range hosts {
-        // Only scan for private IP addresses. If IP is not private, skip.
-        if !isPrivateIP(ip) {
-            log.Errorf("%s IP adress is not private", ip)
-            continue
-        }
-        ipsChan <- ip
-    }
 
-    if len(ipsChan) == 0 {
-        close(ipsChan)
+    // if there are no IPs in the hosts lists, close the TCP server
+    if len(hosts) == 0 {
+        pterm.Error.Println("No IP addresses in CIDR")
         if TCPServer != nil {
             TCPServer.Stop()
         }
+        return
     }
 
-    server := GetLocalIP() + ":5555"
-
     var wg sync.WaitGroup
-    p, _ := pterm.DefaultProgressbar.WithTotal(len(ipsChan)).WithTitle("Progress").Start()
-    for i := range ipsChan {
-        wg.Add(1)
-        go ScanPorts(i, server, ipPortChan, top100, slow, p, &wg)
-        if len(ipsChan) == 0 {
-            close(ipsChan)
+    p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
+    const maxGoroutines = 500
+    cnt := 0
+    for _, i := range hosts {
+        cnt += 1
+        // TODO: replace ports flag with an ENUM
+        if cnt > maxGoroutines {
+            wg.Wait()
+            cnt = 0
         }
+        wg.Add(1)
+        go ScanPorts(i, serverUrl, top100, slow, p, &wg)
     }
     wg.Wait()
     if TCPServer != nil {
@@ -132,7 +135,7 @@ func ScanCIDR(ctx context.Context, cidr string, top100, slow bool) {
     }
 }
 
-func ScanPorts(ip, server string, ipPortChan chan string, top100, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
+func ScanPorts(ip, server string, top100, slow bool, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
     var ports []int
 
     log.Infof("Trying: %s", ip)
@@ -149,11 +152,13 @@ func ScanPorts(ip, server string, ipPortChan chan string, top100, slow bool, p *
     } else { // Fast scan - will go over the ports from the top 10 ports list.
         ports = top10WebPorts
     }
-    go ScanIP(ipPortChan, server)
+    wgPorts := sync.WaitGroup{}
     for _, port := range ports {
         target := fmt.Sprintf("http://%s:%v", ip, port)
-        ipPortChan <- target
+        wgPorts.Add(1)
+        go ScanIP(target, server, &wgPorts)
     }
+    wgPorts.Wait()
 
     p.Increment()
     wg.Done()
@@ -167,6 +172,11 @@ func Hosts(cidr string) ([]string, error) {
 
     var ips []string
     for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+        // Only scan for private IP addresses. If IP is not private, skip.
+        if !isPrivateIP(ip) {
+            log.Errorf("%s IP adress is not private", ip)
+            continue
+        }
         ips = append(ips, ip.String())
     }
 
@@ -190,8 +200,8 @@ func inc(ip net.IP) {
     }
 }
 
-func isPrivateIP(ipS string) bool {
-    ip := net.ParseIP(ipS)
+func isPrivateIP(ip net.IP) bool {
+    //ip := net.ParseIP(ipS)
 
     for _, block := range privateIPs {
         if block.Contains(ip) {

