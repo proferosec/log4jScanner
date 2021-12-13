@@ -19,14 +19,16 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/pterm/pterm"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"log4jScanner/utils"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/pterm/pterm"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
+	"log4jScanner/utils"
 )
 
 // scanCmd represents the scan command
@@ -71,7 +73,9 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		}
 
 		ctx := context.Background()
-		ServerStartOnFlag(ctx, disableServer, serverUrl)
+		if !disableServer {
+			StartServer(ctx, serverUrl)
+		}
 		ScanCIDR(ctx, cidr, ports, serverUrl)
 	},
 }
@@ -93,12 +97,9 @@ func init() {
 }
 
 func ServerStartOnFlag(ctx context.Context, disabled bool, server_url string) {
-	if !disabled {
-		StartServer(ctx, server_url)
-	}
 }
 
-func ScanCIDR(ctx context.Context, cidr string, ports string, serverUrl string) {
+func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
 	hosts, _ := Hosts(cidr)
 
 	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
@@ -113,9 +114,25 @@ func ScanCIDR(ctx context.Context, cidr string, ports string, serverUrl string) 
 		return
 	}
 
+	var ports []int
+	if portsFlag == "slow" {
+		pterm.Warning.Println("Slow flag is currently disabled, defaulting to top10")
+		ports = top10WebPorts
+		//ports = make([]int, endPortSlow-startPortSlow+1)
+		//for i := range ports {
+		//	ports[i] = startPortSlow + i
+		//}
+	} else if portsFlag == "top100" { // top100 will go over to 100 ports
+		ports = top100WebPorts
+	} else { // Fast scan - will go over the ports from the top 10 ports list.
+		ports = top10WebPorts
+	}
+
+	resChan := make(chan string, 10000)
+
 	var wg sync.WaitGroup
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
-	const maxGoroutines = 500
+	const maxGoroutines = 100
 	cnt := 0
 	for _, i := range hosts {
 		cnt += 1
@@ -125,46 +142,49 @@ func ScanCIDR(ctx context.Context, cidr string, ports string, serverUrl string) 
 			cnt = 0
 		}
 		wg.Add(1)
-		go ScanPorts(i, serverUrl, ports, p, &wg)
+		p.Increment()
+		ScanPorts(i, serverUrl, ports, resChan, &wg)
 	}
 	wg.Wait()
 	if TCPServer != nil {
 		TCPServer.Stop()
 	}
+	PrintResults(resChan)
 }
 
-func ScanPorts(ip, server string, portsFlag string, p *pterm.ProgressbarPrinter, wg *sync.WaitGroup) {
-	var ports []int
+func PrintResults(resChan chan string) {
+	pterm.Println()
+	pterm.DefaultHeader.WithFullWidth().Println("Results")
+	close(resChan)
+	for res := range resChan {
+		pterm.Info.Println(res)
+		log.Debugf(":%s", res)
+	}
+	close(TCPServer.sChan)
+	for suc := range TCPServer.sChan {
+		pterm.Success.Println(suc)
+	}
+}
 
+func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	log.Infof("Trying: %s", ip)
 
 	// Slow scan will go over all ports from 1 to 65535
-	if portsFlag == "slow" {
-		ports = make([]int, endPortSlow-startPortSlow+1)
-		for i := range ports {
-			ports[i] = startPortSlow + i
-		}
-	} else if portsFlag == "top100" { // top100 will go over to 100 ports
-		ports = top100WebPorts
-	} else { // Fast scan - will go over the ports from the top 10 ports list.
-		ports = top10WebPorts
-	}
 	wgPorts := sync.WaitGroup{}
 	for _, port := range ports {
-		target := fmt.Sprintf("http://%s:%v", ip, port)
 		wgPorts.Add(1)
-		go ScanIP(target, server, &wgPorts)
 
+		var target string
 		if isPortHttps(port) || strings.Contains(strconv.Itoa(port), "443") {
-			target := fmt.Sprintf("https://%s:%v", ip, port)
-			wgPorts.Add(1)
-			go ScanIP(target, server, &wgPorts)
+			target = fmt.Sprintf("https://%s:%v", ip, port)
+		} else {
+			target = fmt.Sprintf("http://%s:%v", ip, port)
 		}
+		go ScanIP(target, server, &wgPorts, resChan)
 	}
 	wgPorts.Wait()
 
-	p.Increment()
-	wg.Done()
 }
 
 func Hosts(cidr string) ([]string, error) {

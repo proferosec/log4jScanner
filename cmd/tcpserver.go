@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"context"
-	"github.com/pterm/pterm"
-	log "github.com/sirupsen/logrus"
-	"io"
+	"fmt"
 	"net"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pterm/pterm"
+	log "github.com/sirupsen/logrus"
 )
 
 var TCPServer *Server
@@ -22,11 +23,16 @@ func StartServer(ctx context.Context, serverUrl string) {
 	pterm.Info.Println("Starting internal TCP server on", serverUrl)
 	log.Info("Starting TCP server on ", serverUrl)
 	TCPServer = NewServer(serverUrl)
+	TCPServer.sChan = make(chan string, 10000)
 }
 
-func ReportIP(conn net.Conn) {
-	log.Infof("SUCCESS: Remote addr: %s", conn.RemoteAddr())
-	pterm.Success.Println("Remote address: ", conn.RemoteAddr())
+func (s *Server) ReportIP(conn net.Conn) {
+	msg := fmt.Sprintf("SUCCESS: Remote addr: %s", conn.RemoteAddr())
+	log.Info(msg)
+	pterm.Success.Println(msg)
+	if s != nil && s.sChan != nil {
+		s.sChan <- msg
+	}
 	conn.Close()
 }
 
@@ -34,6 +40,7 @@ type Server struct {
 	listener net.Listener
 	quit     chan interface{}
 	wg       sync.WaitGroup
+	sChan    chan string
 }
 
 func NewServer(addr string) *Server {
@@ -43,7 +50,7 @@ func NewServer(addr string) *Server {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		pterm.Error.Println(err)
-		log.Error(err)
+		log.Fatal(err)
 	}
 	s.listener = l
 	s.wg.Add(1)
@@ -53,14 +60,14 @@ func NewServer(addr string) *Server {
 
 func (s *Server) Stop() {
 	spinnerSuccess, _ := pterm.DefaultSpinner.Start("Stopping TCP server")
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	if s == nil || s.listener == nil {
 		return
 	}
 	close(s.quit)
 	s.listener.Close()
-	s.wg.Wait()
 	spinnerSuccess.Success()
+	s.wg.Wait()
 }
 
 func (s *Server) serve() {
@@ -79,28 +86,7 @@ func (s *Server) serve() {
 				log.Println("accept error", err)
 			}
 		} else {
-			s.wg.Add(1)
-			go func() {
-				s.handleConection(conn)
-				s.wg.Done()
-			}()
+			s.ReportIP(conn)
 		}
-	}
-}
-
-func (s *Server) handleConection(conn net.Conn) {
-	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(1000 * time.Millisecond))
-	buf := make([]byte, 2048)
-	for {
-		n, err := conn.Read(buf)
-		if err != nil && err != io.EOF {
-			log.Println("read error", err)
-			return
-		}
-		if n == 0 {
-			return
-		}
-		ReportIP(conn)
 	}
 }
