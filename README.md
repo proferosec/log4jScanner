@@ -7,7 +7,7 @@ For every response it receives, it will log the responding host IP so we can get
 
 ## Basic usage
 Download the tool for your specific platform (Windows, Linux or Mac) from the [release](https://github.com/proferosec/log4jScanner/releases/tag/latest) page.
-To run the tool, make sure port 5555 on the host is available, and specify the subnet to scan:
+To run the tool, make sure port 5555 on the host is available, and specify the subnet to scan (it is possible to configure a separate address using the `--server` flag):
 
 
 `
