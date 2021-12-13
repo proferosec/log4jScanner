@@ -18,8 +18,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -158,16 +160,38 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 func PrintResults(resChan chan string) {
 	pterm.Println()
 	pterm.DefaultHeader.WithFullWidth().Println("Results")
+	csvRecords := [][]string{
+		{"type", "ip", "port", "status_code"},
+	}
 	close(resChan)
 	for res := range resChan {
-		pterm.Info.Println(res)
-		log.Debugf(":%s", res)
+		csvRes := strings.Split(res, ",")
+		msg := fmt.Sprintf("Summary: %s:%s ==> %s", csvRes[1], csvRes[2], csvRes[3])
+		pterm.Info.Println(msg)
+		log.Info(msg)
+		csvRecords = append(csvRecords, csvRes)
 	}
 	close(TCPServer.sChan)
 	for suc := range TCPServer.sChan {
-		pterm.Success.Println(suc)
+		csvSuc := strings.Split(suc, ",")
+		msg := fmt.Sprintf("Summary: Callback from %s:%s", csvSuc[1], csvSuc[2])
+		pterm.Info.Println(msg)
+		log.Info(msg)
+		csvRecords = append(csvRecords, csvSuc)
 	}
-	// vuln,ip,port,status_code
+	f, err := os.Create("log4jScanner-results.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	w := csv.NewWriter(f)
+	defer w.Flush()
+
+	for _, record := range csvRecords {
+		if err := w.Write(record); err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {

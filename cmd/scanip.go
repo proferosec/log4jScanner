@@ -43,7 +43,11 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 		log.Debug(err)
 	}
 	if response != nil {
-		msg := fmt.Sprintf("We got a response, %s ==> Status code: %d", targetUrl, response.StatusCode)
+		url := strings.Split(targetUrl, ":")
+		if len(url) != 3 {
+			log.Fatal("Error in response url parsing:", targetUrl)
+		}
+		msg := fmt.Sprintf("request,%s,%s,%d", strings.Replace(url[1], "/", "", -1), url[2], response.StatusCode)
 		resChan <- msg
 		log.Infof(msg)
 	}
