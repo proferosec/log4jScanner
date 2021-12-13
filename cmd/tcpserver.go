@@ -27,11 +27,13 @@ func StartServer(ctx context.Context, serverUrl string) {
 }
 
 func (s *Server) ReportIP(conn net.Conn) {
-	msg := fmt.Sprintf("SUCCESS: Remote addr: %s", conn.RemoteAddr())
+	callbackIP := conn.RemoteAddr().String()
+	msg := fmt.Sprintf("SUCCESS: Remote addr: %s", callbackIP)
+	url := strings.Split(callbackIP, ":")
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
-		s.sChan <- msg
+		s.sChan <- fmt.Sprintf("callback,%s,%s,", url[0], url[1])
 	}
 	conn.Close()
 }
