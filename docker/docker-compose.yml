@@ -1,16 +1,12 @@
 version: '2'
 services:
   nginx:
-    container_name: "nginx"
-    image: nginx:latest
-    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
       - "8443:443"
-    volumes:
-      - "$PWD/certs:/certs"
-      - "$PWD/nginx.conf:/etc/nginx/nginx.conf"
   app:
-    container_name: "app"
     image: ghcr.io/christophetd/log4shell-vulnerable-app:latest
     
