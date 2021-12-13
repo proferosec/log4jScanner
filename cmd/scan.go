@@ -130,22 +130,22 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 
 	resChan := make(chan string, 10000)
 
-	//var wg sync.WaitGroup
+	var wg sync.WaitGroup
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
-	const maxGoroutines = 50
+	const maxGoroutines = 100
 	cnt := 0
 	for _, i := range hosts {
 		cnt += 1
 		// TODO: replace ports flag with an ENUM
-		//if cnt > maxGoroutines {
-		//wg.Wait()
-		//cnt = 0
-		//}
-		//wg.Add(1)
+		if cnt > maxGoroutines {
+			wg.Wait()
+			cnt = 0
+		}
+		wg.Add(1)
 		p.Increment()
-		ScanPorts(i, serverUrl, ports, resChan)
+		ScanPorts(i, serverUrl, ports, resChan, &wg)
 	}
-	//wg.Wait()
+	wg.Wait()
 	if TCPServer != nil {
 		TCPServer.Stop()
 	}
@@ -166,8 +166,8 @@ func PrintResults(resChan chan string) {
 	}
 }
 
-func ScanPorts(ip, server string, ports []int, resChan chan string) {
-
+func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	log.Infof("Trying: %s", ip)
 
 	// Slow scan will go over all ports from 1 to 65535

@@ -23,7 +23,7 @@ func StartServer(ctx context.Context, serverUrl string) {
 	pterm.Info.Println("Starting internal TCP server on", serverUrl)
 	log.Info("Starting TCP server on ", serverUrl)
 	TCPServer = NewServer(serverUrl)
-	TCPServer.sChan = make(chan string, 10)
+	TCPServer.sChan = make(chan string, 10000)
 }
 
 func (s *Server) ReportIP(conn net.Conn) {
