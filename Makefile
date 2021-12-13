@@ -1,7 +1,7 @@
 PROJECT_NAME=log4jscanner
 GOPATH=$(shell go env GOPATH)
 
-VERSION=$(shell $(GOPATH)/bin/semver get alpha
+VERSION=$(shell $(GOPATH)/bin/semver get alpha)
 BUILD_TIME=$(shell TZ=UTC date -u '+%Y-%m-%d_%I:%M:%S%p')
 
 STRESS_DURATION=1m
