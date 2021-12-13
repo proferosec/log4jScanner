@@ -1,4 +1,4 @@
-# log4j-scanner
+# log4jScanner
 
 ## Goals
 
