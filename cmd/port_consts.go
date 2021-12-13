@@ -21,7 +21,7 @@ var commonHttpsPorts = []int{
 }
 
 var top10WebPorts = []int{
-	80, 8000, 8008, 8080, 8081,
+	80, 443, 8000, 8008, 8080, 8081, 7443, 8443, 9443, 10443,
 }
 
 // Private ip ranges
