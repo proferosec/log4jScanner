@@ -12,6 +12,5 @@ services:
       - "$PWD/nginx.conf:/etc/nginx/nginx.conf"
   app:
     container_name: "app"
-    # image: ghcr.io/christophetd/log4shell-vulnerable-app:latest
-    image: dwdi/log4shell:latest
+    image: ghcr.io/christophetd/log4shell-vulnerable-app:latest
     
