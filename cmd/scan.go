@@ -55,12 +55,6 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
-		serverUrl, err := cmd.Flags().GetString("server")
-		if err != nil {
-			fmt.Println("Error in server flag")
-			cmd.Usage()
-			return
-		}
 
 		ports, err := cmd.Flags().GetString("ports")
 		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
@@ -69,6 +63,12 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			return
 		}
 
+		serverUrl, err := cmd.Flags().GetString("server")
+		if err != nil {
+			fmt.Println("Error in server flag")
+			cmd.Usage()
+			return
+		}
 		if serverUrl == "" {
 			const port = "5555"
 			ipaddrs := GetLocalIP()
@@ -109,9 +109,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
-	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
-	scanCmd.Flags().Bool("noserver", false,
-		"Do not use the internal TCP server, this overrides the server flag if present")
+	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
 	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
