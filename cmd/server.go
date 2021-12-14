@@ -25,8 +25,6 @@ import (
     "github.com/pterm/pterm"
     log "github.com/sirupsen/logrus"
     "github.com/spf13/cobra"
-
-    "log4jScanner/utils"
 )
 
 // serverCmd represents the server command
@@ -35,8 +33,6 @@ var serverCmd = &cobra.Command{
     Short: "run a local TCPServer server",
     Long:  "",
     Run: func(cmd *cobra.Command, args []string) {
-        utils.PrintHeader()
-
         serverUrl, err := cmd.Flags().GetString("server")
         if err != nil {
             fmt.Println("Error in server flag")

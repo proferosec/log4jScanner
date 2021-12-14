@@ -20,7 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"log4jScanner/cmd"
 	"log4jScanner/utils"
-	"os"
 )
 
 var (
@@ -31,15 +30,9 @@ var (
 func main() {
 	utils.SetVersion(Version)
 	//utils.PrintHeader()
-	file, err := os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	// TODO: fix to enable gosec
-	defer file.Close()
-	if err != nil {
-		log.Error("Failed to log to file")
-	}
 
 	utils.InitLogger()
-	utils.GetLogger().SetFile(file)
+	defer utils.Logger.Close()
 	log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
 
 	//cmd.SetVersionTemplate("test")
