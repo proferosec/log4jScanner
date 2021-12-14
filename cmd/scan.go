@@ -18,10 +18,8 @@ package cmd
 
 import (
 	"context"
-	"encoding/csv"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,6 +77,24 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			serverUrl = fmt.Sprintf("%s:%s", ipaddrs, port)
 		}
 
+		csvPath, err = cmd.Flags().GetString("csv-output")
+		if err != nil {
+			fmt.Println("Error in csv-output flag")
+			cmd.Usage()
+			return
+		}
+
+		//LogPath, err = cmd.Flags().GetString("log-output")
+		//if err != nil {
+		//	fmt.Println("Error in log-output flag")
+		//	cmd.Usage()
+		//	return
+		//}
+		//
+		//if LogPath == "" {
+		//	LogPath = "log4jScanner.log"
+		//}
+
 		ctx := context.Background()
 		if !disableServer {
 			StartServer(ctx, serverUrl)
@@ -96,11 +112,15 @@ func init() {
 	// and all subcommands, e.g.:
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
-	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
+	scanCmd.Flags().Bool("noserver", false,
+		"Do not use the internal TCP server, this overrides the server flag if present")
 	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
 	scanCmd.Flags().String("ports", "top10",
-		"Ports to scan. By efault scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
-
+		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
+	scanCmd.Flags().String("csv-output", "",
+		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
+	//scanCmd.Flags().String("log-output","",
+	//	"Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
 	createPrivateIPBlocks()
 }
 
@@ -160,38 +180,40 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 func PrintResults(resChan chan string) {
 	pterm.Println()
 	pterm.DefaultHeader.WithFullWidth().Println("Results")
-	csvRecords := [][]string{
-		{"type", "ip", "port", "status_code"},
-	}
+	//csvRecords := [][]string{
+	//	{"type", "ip", "port", "status_code"},
+	//}
 	close(resChan)
-	for res := range resChan {
-		csvRes := strings.Split(res, ",")
-		msg := fmt.Sprintf("Summary: %s:%s ==> %s", csvRes[1], csvRes[2], csvRes[3])
-		pterm.Info.Println(msg)
-		log.Info(msg)
-		csvRecords = append(csvRecords, csvRes)
-	}
-	close(TCPServer.sChan)
-	for suc := range TCPServer.sChan {
-		csvSuc := strings.Split(suc, ",")
-		msg := fmt.Sprintf("Summary: Callback from %s:%s", csvSuc[1], csvSuc[2])
-		pterm.Info.Println(msg)
-		log.Info(msg)
-		csvRecords = append(csvRecords, csvSuc)
-	}
-	f, err := os.Create("log4jScanner-results.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	w := csv.NewWriter(f)
-	defer w.Flush()
-
-	for _, record := range csvRecords {
-		if err := w.Write(record); err != nil {
-			log.Fatal(err)
-		}
-	}
+	csvRecords := createCsvRecords(resChan)
+	saveCSV(csvRecords)
+	//for res := range resChan {
+	//	csvRes := strings.Split(res, ",")
+	//	msg := fmt.Sprintf("Summary: %s:%s ==> %s", csvRes[1], csvRes[2], csvRes[3])
+	//	pterm.Info.Println(msg)
+	//	log.Info(msg)
+	//	csvRecords = append(csvRecords, csvRes)
+	//}
+	//close(TCPServer.sChan)
+	//for suc := range TCPServer.sChan {
+	//	csvSuc := strings.Split(suc, ",")
+	//	msg := fmt.Sprintf("Summary: Callback from %s:%s", csvSuc[1], csvSuc[2])
+	//	pterm.Info.Println(msg)
+	//	log.Info(msg)
+	//	csvRecords = append(csvRecords, csvSuc)
+	//}
+	//f, err := os.Create("log4jScanner-results.csv")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer f.Close()
+	//w := csv.NewWriter(f)
+	//defer w.Flush()
+	//
+	//for _, record := range csvRecords {
+	//	if err := w.Write(record); err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
