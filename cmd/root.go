@@ -18,9 +18,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 
 	"log4jScanner/utils"
 
@@ -31,6 +31,8 @@ import (
 var (
 	cfgFile string
 )
+
+var DebugFlag bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -54,6 +56,19 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initLog)
+
+	// Here you will define your flags and configuration settings.
+	// Cobra supports persistent flags, which, if defined here,
+	// will be global for your application.
+
+	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.log4j_scanner.yaml)")
+
+	rootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "set log level to debug")
+
+	// Cobra also supports local flags, which will only run
+	// when this action is called directly.
+	rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -76,5 +91,14 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+//initLog check if --debug flag was set
+//and will set the logger to debug level
+//otherwise logger level will be info by default
+func initLog() {
+	if DebugFlag {
+		utils.Logger.SetLevel(log.DebugLevel)
 	}
 }
