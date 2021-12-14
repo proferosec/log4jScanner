@@ -22,7 +22,10 @@ func StartServer(ctx context.Context, serverUrl string) {
 	}
 	pterm.Info.Println("Starting internal TCP server on", serverUrl)
 	log.Info("Starting TCP server on ", serverUrl)
-	TCPServer = NewServer(serverUrl)
+	// replace ip with 0.0.0.0:port
+	url := strings.Split(serverUrl, ":")
+	localUrl := fmt.Sprintf("0.0.0.0:%s", url[1])
+	TCPServer = NewServer(localUrl)
 	TCPServer.sChan = make(chan string, 10000)
 }
 

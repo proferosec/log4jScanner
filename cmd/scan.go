@@ -58,12 +58,6 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
-		serverUrl, err := cmd.Flags().GetString("server")
-		if err != nil {
-			fmt.Println("Error in server flag")
-			cmd.Usage()
-			return
-		}
 
 		ports, err := cmd.Flags().GetString("ports")
 		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
@@ -72,6 +66,12 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			return
 		}
 
+		serverUrl, err := cmd.Flags().GetString("server")
+		if err != nil {
+			fmt.Println("Error in server flag")
+			cmd.Usage()
+			return
+		}
 		if serverUrl == "" {
 			const port = "5555"
 			ipaddrs := GetLocalIP()
@@ -94,11 +94,10 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
-	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
 	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
-	scanCmd.Flags().String("ports", "top10",
-		"Ports to scan. By efault scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
+	scanCmd.Flags().String("ports", "top10", "Ports to scan. By efault scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
+	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 
 	createPrivateIPBlocks()
 }
@@ -171,13 +170,15 @@ func PrintResults(resChan chan string) {
 		log.Info(msg)
 		csvRecords = append(csvRecords, csvRes)
 	}
-	close(TCPServer.sChan)
-	for suc := range TCPServer.sChan {
-		csvSuc := strings.Split(suc, ",")
-		msg := fmt.Sprintf("Summary: Callback from %s:%s", csvSuc[1], csvSuc[2])
-		pterm.Info.Println(msg)
-		log.Info(msg)
-		csvRecords = append(csvRecords, csvSuc)
+	if TCPServer != nil {
+		close(TCPServer.sChan)
+		for suc := range TCPServer.sChan {
+			csvSuc := strings.Split(suc, ",")
+			msg := fmt.Sprintf("Summary: Callback from %s:%s", csvSuc[1], csvSuc[2])
+			pterm.Info.Println(msg)
+			log.Info(msg)
+			csvRecords = append(csvRecords, csvSuc)
+		}
 	}
 	f, err := os.Create("log4jScanner-results.csv")
 	if err != nil {
