@@ -17,254 +17,255 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"context"
-	"fmt"
-	"net"
-	"sync"
+    "context"
+    "fmt"
+    "net"
+    "sync"
 
-	"github.com/pterm/pterm"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+    "github.com/pterm/pterm"
+    log "github.com/sirupsen/logrus"
+    "github.com/spf13/cobra"
 
-	"log4jScanner/utils"
+    "log4jScanner/utils"
 )
 
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
-	Use:   "scan",
-	Short: "Scan all IPs in the given CIDR",
-	Long: `Scan each IP for open ports. By default will scan 10 top ports.
+    Use:   "scan",
+    Short: "Scan all IPs in the given CIDR",
+    Long: `Scan each IP for open ports. By default will scan 10 top ports.
 For example: log4jScanner scan --cidr "192.168.0.1/24`,
-	Run: func(cmd *cobra.Command, args []string) {
-		nocolors, err := cmd.Flags().GetBool("nocolor")
-		if nocolors {
-			pterm.DisableColor()
-		}
+    Run: func(cmd *cobra.Command, args []string) {
+        nocolors, err := cmd.Flags().GetBool("nocolor")
+        if nocolors {
+            pterm.DisableColor()
+        }
 
-		utils.PrintHeader()
-		disableServer, err := cmd.Flags().GetBool("noserver")
-		if err != nil {
-			log.Error("server flag error")
-			cmd.Usage()
-			return
-		}
-		// TODO: add cancel context
-		cidr, err := cmd.Flags().GetString("cidr")
-		if err != nil || cidr == "" {
-			fmt.Println("CIDR flag missing")
-			cmd.Usage()
-			return
-		}
+        utils.PrintHeader()
+        disableServer, err := cmd.Flags().GetBool("noserver")
+        if err != nil {
+            log.Error("server flag error")
+            cmd.Usage()
+            return
+        }
+        // TODO: add cancel context
+        cidr, err := cmd.Flags().GetString("cidr")
+        if err != nil || cidr == "" {
+            fmt.Println("CIDR flag missing")
+            cmd.Usage()
+            return
+        }
 
-		ports, err := cmd.Flags().GetString("ports")
-		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
-			fmt.Println("error in ports flag")
-			cmd.Usage()
-			return
-		}
+        ports, err := cmd.Flags().GetString("ports")
+        if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
+            fmt.Println("error in ports flag")
+            cmd.Usage()
+            return
+        }
 
-		serverUrl, err := cmd.Flags().GetString("server")
-		if err != nil {
-			fmt.Println("Error in server flag")
-			cmd.Usage()
-			return
-		}
-		if serverUrl == "" {
-			const port = "5555"
-			ipaddrs := GetLocalIP()
-			serverUrl = fmt.Sprintf("%s:%s", ipaddrs, port)
-		}
+        serverUrl, err := cmd.Flags().GetString("server")
+        if err != nil {
+            fmt.Println("Error in server flag")
+            cmd.Usage()
+            return
+        }
+        if serverUrl == "" {
+            const port = "5555"
+            ipaddrs := GetLocalIP()
+            serverUrl = fmt.Sprintf("%s:%s", ipaddrs, port)
+        }
 
-		csvPath, err = cmd.Flags().GetString("csv-output")
-		if err != nil {
-			fmt.Println("Error in csv-output flag")
-			cmd.Usage()
-			return
-		}
+        csvPath, err = cmd.Flags().GetString("csv-output")
+        if err != nil {
+            fmt.Println("Error in csv-output flag")
+            cmd.Usage()
+            return
+        }
 
-		//LogPath, err = cmd.Flags().GetString("log-output")
-		//if err != nil {
-		//	fmt.Println("Error in log-output flag")
-		//	cmd.Usage()
-		//	return
-		//}
-		//
-		//if LogPath == "" {
-		//	LogPath = "log4jScanner.log"
-		//}
+        //LogPath, err = cmd.Flags().GetString("log-output")
+        //if err != nil {
+        //	fmt.Println("Error in log-output flag")
+        //	cmd.Usage()
+        //	return
+        //}
+        //
+        //if LogPath == "" {
+        //	LogPath = "log4jScanner.log"
+        //}
 
-		ctx := context.Background()
-		if !disableServer {
-			StartServer(ctx, serverUrl)
-		}
-		ScanCIDR(ctx, cidr, ports, serverUrl)
-	},
+        ctx := context.Background()
+        if !disableServer {
+            StartServer(ctx, serverUrl)
+        }
+        ScanCIDR(ctx, cidr, ports, serverUrl)
+    },
 }
 
 func init() {
-	rootCmd.AddCommand(scanCmd)
+    rootCmd.AddCommand(scanCmd)
 
-	// define your flags and configuration settings.
+    // define your flags and configuration settings.
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
-	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
-	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
-	scanCmd.Flags().String("ports", "top10",
-		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
-	scanCmd.Flags().String("csv-output", "",
-		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
-	//scanCmd.Flags().String("log-output","",
-	//	"Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
-	createPrivateIPBlocks()
+    // Cobra supports Persistent Flags which will work for this command
+    // and all subcommands, e.g.:
+    scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
+    scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
+    scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
+    scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
+    scanCmd.Flags().String("ports", "top10",
+        "Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
+    scanCmd.Flags().String("csv-output", "",
+        "Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
+    //scanCmd.Flags().String("log-output","",
+    //	"Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
+    createPrivateIPBlocks()
 }
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
-	hosts, _ := Hosts(cidr)
+    hosts, _ := Hosts(cidr)
 
-	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
-	// Scan for open ports, if there is an open port, add it to the chan
+    pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
+    // Scan for open ports, if there is an open port, add it to the chan
 
-	// if there are no IPs in the hosts lists, close the TCP server
-	if len(hosts) == 0 {
-		pterm.Error.Println("No IP addresses in CIDR")
-		if TCPServer != nil {
-			TCPServer.Stop()
-		}
-		return
-	}
+    // if there are no IPs in the hosts lists, close the TCP server
+    if len(hosts) == 0 {
+        pterm.Error.Println("No IP addresses in CIDR")
+        if TCPServer != nil {
+            TCPServer.Stop()
+        }
+        return
+    }
 
-	var ports []int
-	if portsFlag == "slow" {
-		pterm.Warning.Println("Slow flag is currently disabled, defaulting to top10")
-		ports = top10WebPorts
-		//ports = make([]int, endPortSlow-startPortSlow+1)
-		//for i := range ports {
-		//	ports[i] = startPortSlow + i
-		//}
-	} else if portsFlag == "top100" { // top100 will go over to 100 ports
-		ports = top100WebPorts
-	} else { // Fast scan - will go over the ports from the top 10 ports list.
-		ports = top10WebPorts
-	}
+    var ports []int
+    if portsFlag == "slow" {
+        pterm.Warning.Println("Slow flag is currently disabled, defaulting to top10")
+        ports = top10WebPorts
+        //ports = make([]int, endPortSlow-startPortSlow+1)
+        //for i := range ports {
+        //	ports[i] = startPortSlow + i
+        //}
+    } else if portsFlag == "top100" { // top100 will go over to 100 ports
+        ports = top100WebPorts
+    } else { // Fast scan - will go over the ports from the top 10 ports list.
+        ports = top10WebPorts
+    }
 
-	resChan := make(chan string, 10000)
+    resChan := make(chan string, 10000)
 
-	var wg sync.WaitGroup
-	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
-	const maxGoroutines = 100
-	cnt := 0
-	for _, i := range hosts {
-		cnt += 1
-		// TODO: replace ports flag with an ENUM
-		if cnt > maxGoroutines {
-			wg.Wait()
-			cnt = 0
-		}
-		wg.Add(1)
-		p.Increment()
-		// TODO: replace with go
-		ScanPorts(i, serverUrl, ports, resChan, &wg)
-	}
-	wg.Wait()
-	if TCPServer != nil {
-		TCPServer.Stop()
-	}
-	PrintResults(resChan)
+    var wg sync.WaitGroup
+    p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
+    const maxGoroutines = 100
+    cnt := 0
+    for _, i := range hosts {
+        cnt += 1
+        // TODO: replace ports flag with an ENUM
+        if cnt > maxGoroutines {
+            wg.Wait()
+            cnt = 0
+        }
+        wg.Add(1)
+        p.Increment()
+        // TODO: replace with go
+        ScanPorts(i, serverUrl, ports, resChan, &wg)
+    }
+    wg.Wait()
+    if TCPServer != nil {
+        TCPServer.Stop()
+    }
+    PrintResults(resChan)
 }
 
 func PrintResults(resChan chan string) {
-	pterm.Println()
-	pterm.DefaultHeader.WithFullWidth().Println("Results")
+    pterm.Println()
+    pterm.DefaultHeader.WithFullWidth().Println("Results")
 
-	close(resChan)
-	csvRecords := createCsvRecords(resChan)
-	saveCSV(csvRecords)
+    close(resChan)
+    csvRecords := createCsvRecords(resChan)
+    saveCSV(csvRecords)
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	log.Infof("Trying: %s", ip)
+    defer wg.Done()
+    log.Infof("Trying: %s", ip)
 
-	// Slow scan will go over all ports from 1 to 65535
-	wgPorts := sync.WaitGroup{}
-	for _, port := range ports {
-		wgPorts.Add(1)
+    // Slow scan will go over all ports from 1 to 65535
+    wgPorts := sync.WaitGroup{}
+    for _, port := range ports {
+        wgPorts.Add(1)
 
-		targetHttps := fmt.Sprintf("http://%s:%v", ip, port)
-		targetHttp := fmt.Sprintf("https://%s:%v", ip, port)
-		wgPorts.Add(2)
-		go ScanIP(targetHttp, server, &wgPorts, resChan)
-		go ScanIP(targetHttps, server, &wgPorts, resChan)
-	}
-	wgPorts.Wait()
+        targetHttps := fmt.Sprintf("http://%s:%v", ip, port)
+        targetHttp := fmt.Sprintf("https://%s:%v", ip, port)
+        wgPorts.Add(2)
+        go ScanIP(targetHttp, server, &wgPorts, resChan)
+        go ScanIP(targetHttps, server, &wgPorts, resChan)
+    }
+    wgPorts.Wait()
 
 }
 
 func Hosts(cidr string) ([]string, error) {
-	ip, ipnet, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return nil, err
-	}
+    ip, ipnet, err := net.ParseCIDR(cidr)
+    if err != nil {
+        return nil, err
+    }
 
-	var ips []string
-	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		// Only scan for private IP addresses. If IP is not private, skip.
-		if !isPrivateIP(ip) {
-			log.Errorf("%s IP adress is not private", ip)
-			continue
-		}
-		ips = append(ips, ip.String())
-	}
+    var ips []string
+    for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+        // Only scan for private IP addresses. If IP is not private, skip.
+        if !isPrivateIP(ip) {
+            log.Errorf("%s IP adress is not private", ip)
+            continue
+        }
+        ips = append(ips, ip.String())
+    }
 
-	// remove network address and broadcast address
-	lenIPs := len(ips)
-	switch {
-	case lenIPs < 2:
-		return ips, nil
+    // remove network address and broadcast address
+    lenIPs := len(ips)
+    switch {
+    case lenIPs < 2:
+        return ips, nil
 
-	default:
-		return ips[1 : len(ips)-1], nil
-	}
+    default:
+        return ips[1 : len(ips)-1], nil
+    }
 }
 
 func inc(ip net.IP) {
-	for j := len(ip) - 1; j >= 0; j-- {
-		ip[j]++
-		if ip[j] > 0 {
-			break
-		}
-	}
+    for j := len(ip) - 1; j >= 0; j-- {
+        ip[j]++
+        if ip[j] > 0 {
+            break
+        }
+    }
 }
 
 func isPrivateIP(ip net.IP) bool {
-	//ip := net.ParseIP(ipS)
+    //ip := net.ParseIP(ipS)
 
-	for _, block := range privateIPs {
-		if block.Contains(ip) {
-			return true
-		}
-	}
-	return false
+    for _, block := range privateIPs {
+        if block.Contains(ip) {
+            return true
+        }
+    }
+    return false
 
 }
 
 func createPrivateIPBlocks() {
-	for _, cidr := range privateIPBlocks {
-		_, block, err := net.ParseCIDR(cidr)
-		if err != nil {
-			log.Error("parse error on %q: %v", cidr, err)
-		}
-		privateIPs = append(privateIPs, block)
-	}
+    for _, cidr := range privateIPBlocks {
+        _, block, err := net.ParseCIDR(cidr)
+        if err != nil {
+            log.Error("parse error on %q: %v", cidr, err)
+        }
+        privateIPs = append(privateIPs, block)
+    }
 }
 
-func isPortHttps(port int) bool {
-	for _, p := range commonHttpsPorts {
-		if port == p {
-			return true
-		}
-	}
-	return false
-}
+//func isPortHttps(port int) bool {
+//	for _, p := range commonHttpsPorts {
+//		if port == p {
+//			return true
+//		}
+//	}
+//	return false
+//}
