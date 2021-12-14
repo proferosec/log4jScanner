@@ -98,7 +98,7 @@ func init() {
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
 	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
 	scanCmd.Flags().String("ports", "top10",
-		"Ports to scan. By efault scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
+		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
 
 	createPrivateIPBlocks()
 }
