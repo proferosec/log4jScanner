@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strconv"
+	"os"
 	"strings"
 	"sync"
 
@@ -168,6 +168,7 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 		}
 		wg.Add(1)
 		p.Increment()
+		// TODO: replace with go
 		ScanPorts(i, serverUrl, ports, resChan, &wg)
 	}
 	wg.Wait()
@@ -195,13 +196,11 @@ func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.Wai
 	for _, port := range ports {
 		wgPorts.Add(1)
 
-		var target string
-		if isPortHttps(port) || strings.Contains(strconv.Itoa(port), "443") {
-			target = fmt.Sprintf("https://%s:%v", ip, port)
-		} else {
-			target = fmt.Sprintf("http://%s:%v", ip, port)
-		}
-		go ScanIP(target, server, &wgPorts, resChan)
+		targetHttps := fmt.Sprintf("http://%s:%v", ip, port)
+		targetHttp := fmt.Sprintf("https://%s:%v", ip, port)
+		wgPorts.Add(2)
+		go ScanIP(targetHttp, server, &wgPorts, resChan)
+		go ScanIP(targetHttps, server, &wgPorts, resChan)
 	}
 	wgPorts.Wait()
 

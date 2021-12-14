@@ -16,7 +16,10 @@ log4jscanner.exe scan --cidr 192.168.7.0/24
 
 
 This will test the top10 HTTP\S ports on the hosts in the subnet and print the vulnerable hosts to the screen and will generate a log in the same location as the binary including all the attempts (both vulnerable and non-vulnerable).
-In order to identify which hosts are vulnerable just lookup the word `SUCCESS` in the log.
+
+In order to identify which hosts are vulnerable just lookup the word `SUCCESS` in the log, you can grep like this `grep "Summary" log4jScanner.log` to get just the results.
+Also, the tool generates a CSV file containing all the results, just filter on the `Voulnerable` column.
+
 
 ## Additional usage options
 You can use the tool to test for the top 100 HTTP\S ports using the `ports --top100` flag, or for the entire port range using `ports --slow` - Keep in mind, using `ports --slow` will take time to complete.
@@ -28,8 +31,13 @@ log4jscanner.exe scan --cidr 192.168.7.0/24 --ports top100
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports slow
 ```
 
+## Available flags
 
-## test setup
+* `--server` allows you to specify the listening server ip and port
+* `--nocolor` provide output without color
+* 
+
+## Test setup
 Run the docker compose in [here](https://github.com/proferosec/log4jScanner/tree/main/docker):
 
 `docker-compose up -d`
