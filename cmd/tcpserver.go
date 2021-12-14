@@ -20,11 +20,11 @@ func StartServer(ctx context.Context, serverUrl string) {
 		pterm.Error.Println("server url does not match HOST:PORT")
 		return
 	}
-	pterm.Info.Println("Starting internal TCP server on", serverUrl)
-	log.Info("Starting TCP server on ", serverUrl)
-	// replace ip with 0.0.0.0:port
 	url := strings.Split(serverUrl, ":")
 	localUrl := fmt.Sprintf("0.0.0.0:%s", url[1])
+	pterm.Info.Println("Starting internal TCP server on", localUrl)
+	log.Info("Starting TCP server on ", localUrl)
+	// replace ip with 0.0.0.0:port
 	TCPServer = NewServer(localUrl)
 	TCPServer.sChan = make(chan string, 10000)
 }

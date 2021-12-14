@@ -61,3 +61,5 @@ release-linux:
 
 clean:
 	rm -rf ./build || true
+	rm *.log || true
+	rm *.csv || true
