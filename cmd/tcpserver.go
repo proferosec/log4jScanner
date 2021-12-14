@@ -27,6 +27,12 @@ func StartServer(ctx context.Context, serverUrl string) {
 	// replace ip with 0.0.0.0:port
 	TCPServer = NewServer(localUrl)
 	TCPServer.sChan = make(chan string, 10000)
+	TCPServer.csvHandler = csvHandler
+}
+
+func csvHandler(tpe, ip, port string) {
+	rec := []string{tpe, ip, port}
+	fmt.Println(rec)
 }
 
 func (s *Server) ReportIP(conn net.Conn) {
@@ -36,16 +42,20 @@ func (s *Server) ReportIP(conn net.Conn) {
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
+		if s.csvHandler != nil {
+			s.csvHandler("callback", url[0], url[1])
+		}
 		s.sChan <- fmt.Sprintf("callback,%s,%s,", url[0], url[1])
 	}
 	conn.Close()
 }
 
 type Server struct {
-	listener net.Listener
-	quit     chan interface{}
-	wg       sync.WaitGroup
-	sChan    chan string
+	listener   net.Listener
+	quit       chan interface{}
+	wg         sync.WaitGroup
+	sChan      chan string
+	csvHandler func(tpe, ip, port string)
 }
 
 func NewServer(addr string) *Server {

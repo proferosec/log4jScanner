@@ -17,7 +17,7 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 	defer wg.Done()
 
 	client := &http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: 1250 * time.Millisecond,
 		Transport: &http.Transport{
 			TLSHandshakeTimeout:   1 * time.Second,
 			ResponseHeaderTimeout: 1 * time.Second,
