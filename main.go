@@ -17,53 +17,16 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package main
 
 import (
-	"io"
+	log "github.com/sirupsen/logrus"
 	"log4jScanner/cmd"
 	"log4jScanner/utils"
 	"os"
-	"strings"
-
-	joonix "github.com/joonix/log"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
 	Version   string
 	BuildTime string
 )
-
-func setupLog(logFormat, logLevel string, file io.Writer) {
-	switch strings.ToLower(logFormat) {
-	case "text":
-		{
-			log.SetFormatter(&log.TextFormatter{}) // normal output
-		}
-	case "json":
-		{
-			log.SetFormatter(&log.JSONFormatter{}) // simple json output
-		}
-	case "fluentd":
-		{
-			log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
-		}
-	default:
-		log.SetFormatter(joonix.NewFormatter()) //Fluentd compatible
-	}
-
-	if file != nil {
-		log.SetOutput(file)
-	} else {
-		log.Fatal("unable to log to file")
-	}
-	switch strings.ToLower(logLevel) {
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "warning":
-		log.SetLevel(log.WarnLevel)
-	default:
-		log.SetLevel(log.InfoLevel)
-	}
-}
 
 func main() {
 	utils.SetVersion(Version)
@@ -75,7 +38,8 @@ func main() {
 		log.Error("Failed to log to file")
 	}
 
-	setupLog("text", "debug", file)
+	utils.InitLogger()
+	utils.GetLogger().SetFile(file)
 	log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
 
 	//cmd.SetVersionTemplate("test")
