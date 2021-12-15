@@ -22,8 +22,9 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "release/*"
+          commit: ${{ env.GITHUB_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
+          
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
