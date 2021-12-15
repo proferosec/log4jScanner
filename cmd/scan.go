@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/pterm/pterm"
@@ -84,6 +85,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
+		initCSV()
 
 		ctx := context.Background()
 		if !disableServer {
@@ -112,7 +114,16 @@ func init() {
 }
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
-	hosts, _ := Hosts(cidr)
+	hosts, err := Hosts(cidr)
+	//if err is not nil cidr wasn't parse correctly
+	if err != nil {
+		pterm.Error.Println("Failed to get hosts, what:",err)
+		//an error occurred and program should shut down, close the TCP server
+		if TCPServer != nil {
+			TCPServer.Stop()
+		}
+		return
+	}
 
 	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
 	// Scan for open ports, if there is an open port, add it to the chan
@@ -170,8 +181,22 @@ func PrintResults(resChan chan string) {
 	pterm.DefaultHeader.WithFullWidth().Println("Results")
 
 	close(resChan)
-	csvRecords := createCsvRecords(resChan)
-	saveCSV(csvRecords)
+	for res := range resChan {
+		fullRes := strings.Split(res, ",")
+		msg := fmt.Sprintf("Summary: %s:%s ==> %s", fullRes[1], fullRes[2], fullRes[3])
+		pterm.Info.Println(msg)
+		log.Info(msg)
+	}
+
+	if TCPServer != nil && TCPServer.sChan != nil {
+		close(TCPServer.sChan)
+		for suc := range TCPServer.sChan {
+			fullSuc := strings.Split(suc, ",")
+			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
+			pterm.Info.Println(msg)
+			log.Info(msg)
+		}
+	}
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
