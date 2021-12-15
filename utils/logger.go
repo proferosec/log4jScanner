@@ -31,6 +31,14 @@ func GetLogger() *logger{
     return Logger
 }
 
+func (l *logger) Close() error {
+    err := l.File.Close()
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
 func (l *logger) SetLevel(level log.Level){
     l.Level = level
     log.SetLevel(level)

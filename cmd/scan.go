@@ -25,8 +25,6 @@ import (
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	"log4jScanner/utils"
 )
 
 // scanCmd represents the scan command
@@ -41,7 +39,6 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			pterm.DisableColor()
 		}
 
-		utils.PrintHeader()
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
 			log.Error("server flag error")
@@ -116,8 +113,6 @@ func init() {
 		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
 	scanCmd.Flags().String("csv-output", "",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
-	//scanCmd.Flags().String("log-output","",
-	//	"Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
 	createPrivateIPBlocks()
 }
 
