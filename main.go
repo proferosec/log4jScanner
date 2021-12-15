@@ -18,24 +18,25 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
+
 	"log4jScanner/cmd"
 	"log4jScanner/utils"
 )
 
 var (
-	Version   string
-	BuildTime string
+    Version   string
+    BuildTime string
 )
 
 func main() {
-	utils.SetVersion(Version)
-	//utils.PrintHeader()
+    utils.SetVersion(Version, BuildTime)
+    //utils.PrintHeader()
 
-	utils.InitLogger()
-	defer utils.Logger.Close()
-	log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
+    utils.InitLogger()
+    defer utils.Logger.Close()
+    log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
 
-	//cmd.SetVersionTemplate("test")
-	//cmd.SetHelpFunc()
-	cmd.Execute()
+    //cmd.SetVersionTemplate("test")
+    //cmd.SetHelpFunc()
+    cmd.Execute()
 }
