@@ -36,7 +36,9 @@ func (s *Server) ReportIP(conn net.Conn) {
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
-		s.sChan <- fmt.Sprintf("callback,%s,%s,", url[0], url[1])
+		resMsg := fmt.Sprintf("callback,%s,%s,", url[0], url[1])
+		updateCsvRecords(resMsg)
+		s.sChan <- resMsg
 	}
 	conn.Close()
 }
