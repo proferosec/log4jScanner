@@ -222,7 +222,8 @@ func Hosts(cidr string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !ip.IsPrivate() {
+	//if ip is not private or loopback it's considered public
+	if !(ip.IsPrivate() || ip.IsLoopback()) {
 		return nil, errors.New(fmt.Sprintf("addresses in cidr: %s isn't private IPs",cidr))
 	}
 	var ips []string
