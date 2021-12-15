@@ -18,7 +18,10 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
+
+	"log4jScanner/utils"
 )
 
 // versionCmd represents the version command
@@ -27,7 +30,8 @@ var versionCmd = &cobra.Command{
 	Short: "Get current version",
 	Long:  `Get current version`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("version:")
+		fmt.Println("Version:", utils.Version)
+		fmt.Println("Build Time:", utils.BuildTime)
 	},
 }
 

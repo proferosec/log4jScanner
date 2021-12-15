@@ -4,35 +4,16 @@ GOPATH=$(shell go env GOPATH)
 VERSION=$(shell $(GOPATH)/bin/semver get alpha)
 BUILD_TIME=$(shell TZ=UTC date -u '+%Y-%m-%d_%I:%M:%S%p')
 
-STRESS_DURATION=1m
-STRESS_QPS=100 
-
 all: clean init build release
 
 build: build-windows build-darwin build-linux
-
 release: release-windows release-darwin release-linux
 
 test:
 	go test .
 
 init:
-	go get -u \
-		github.com/maykonlf/semver-cli/cmd/semver \
-	  github.com/securego/gosec/v2/cmd/gosec \
-		github.com/rakyll/hey
-
-stress:
-	hey -z $(STRESS_DURATION) -q $(STRESS_QPS) -m GET http://localhost:5000
-
-compose-up:
-	docker-compose up -d
-
-compose-down:
-	docker-compose down
-
-gosec:
-	$(GOPATH)/bin/gosec . -tests
+	go get -u github.com/maykonlf/semver-cli/cmd/semver 
 
 upver:
 	$(GOPATH)/bin/semver up alpha
@@ -46,20 +27,23 @@ build-darwin:
 build-linux:
 	GOOS=linux GOARCH=amd64 go build -o "build/linux/$(PROJECT_NAME)" -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
-release-windows:
-	mkdir release || true
+release-windows: release-dir
 	zip -j release/$(PROJECT_NAME)-windows.zip build/windows/$(PROJECT_NAME).exe
+	echo $(shell shasum -a 256 build/windows/$(PROJECT_NAME).exe | cut -f1 -d" ") $(PROJECT_NAME).exe > release/windows.sha256.txt
 
-release-darwin:
-	mkdir release || true
+release-darwin: release-dir
 	zip -j release/$(PROJECT_NAME)-darwin.zip build/darwin/$(PROJECT_NAME)
+	echo $(shell shasum -a 256 build/darwin/$(PROJECT_NAME) | cut -f1 -d" ") $(PROJECT_NAME) > release/darwin.sha256.txt
 
-release-linux:
-	mkdir release || true
+release-linux: release-dir
 	zip -j release/$(PROJECT_NAME)-linux.zip build/linux/$(PROJECT_NAME)
+	echo $(shell shasum -a 256 build/linux/$(PROJECT_NAME) | cut -f1 -d" ") $(PROJECT_NAME) > release/linux.sha256.txt
 
+release-dir:
+	mkdir release || true
 
 clean:
 	rm -rf ./build || true
+	rm -rf ./release || true
 	rm *.log || true
 	rm *.csv || true

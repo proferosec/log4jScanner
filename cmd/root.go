@@ -18,6 +18,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -80,7 +82,7 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
+	//rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
 }
 
 // initConfig reads in config file and ENV variables if set.
