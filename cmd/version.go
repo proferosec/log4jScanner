@@ -17,7 +17,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
+	"github.com/pterm/pterm"
 	"log4jScanner/utils"
 
 	"github.com/spf13/cobra"
@@ -30,7 +30,7 @@ var versionCmd = &cobra.Command{
 	Long:  `Get current version`,
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.PrintHeader()
-		fmt.Println("version:")
+		pterm.Info.Println("version:", utils.Version)
 	},
 }
 
