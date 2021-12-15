@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-release:
-    name: build-and-release
+    name: build-and-release-main
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +21,7 @@ jobs:
       - name: run make
         run: make
       - name: Set env
-        run: echo "VERSION=$(semver get alpha)" >> $GITHUB_ENV
+        run: echo "VERSION=$(semver get release)" >> $GITHUB_ENV
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
