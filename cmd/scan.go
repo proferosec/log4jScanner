@@ -111,7 +111,7 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 	hosts, err := Hosts(cidr)
 	//if err is not nil cidr wasn't parse correctly
 	if err != nil {
-		pterm.Error.Println("Failed to get hosts, what:",err)
+		pterm.Error.Println("Failed to get hosts, what:", err)
 		//an error occurred and program should shut down, close the TCP server
 		if TCPServer != nil {
 			TCPServer.Stop()
@@ -171,10 +171,9 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 }
 
 func PrintResults(resChan chan string) {
-	pterm.Println()
-	pterm.DefaultHeader.WithFullWidth().Println("Results")
-
 	close(resChan)
+	pterm.Println()
+	pterm.NewStyle(pterm.FgGreen).Printfln("Total requests: %d", len(resChan))
 	for res := range resChan {
 		fullRes := strings.Split(res, ",")
 		msg := fmt.Sprintf("Summary: %s:%s ==> %s", fullRes[1], fullRes[2], fullRes[3])
@@ -183,6 +182,8 @@ func PrintResults(resChan chan string) {
 	}
 
 	if TCPServer != nil && TCPServer.sChan != nil {
+		pterm.Println()
+		pterm.NewStyle(pterm.FgGreen).Printfln("Total callbacks: %d", len(TCPServer.sChan))
 		close(TCPServer.sChan)
 		for suc := range TCPServer.sChan {
 			fullSuc := strings.Split(suc, ",")

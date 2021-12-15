@@ -18,10 +18,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 
 	"log4jScanner/utils"
 
@@ -72,7 +73,7 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
+	//rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -114,7 +115,7 @@ func initLog() {
 		pterm.Warning.Println("failed to change log file location (using running folder), what:", err)
 		file, err = os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		if err != nil {
-			log.Fatal("Failed to log to file, what:",err)
+			log.Fatal("Failed to log to file, what:", err)
 		}
 	}
 	utils.GetLogger().SetFile(file)

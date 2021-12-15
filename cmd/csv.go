@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"encoding/csv"
-	"github.com/pterm/pterm"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/pterm/pterm"
+	log "github.com/sirupsen/logrus"
 )
 
 var csvPath string
@@ -50,6 +51,9 @@ func initCSV() {
 func readCsv() (csvRecords [][]string, err error) {
 	// open and read csv
 	f, err := os.Open(csvPath)
+	if err == os.ErrNotExist {
+		f, _ = os.Create(csvPath)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}

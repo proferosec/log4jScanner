@@ -44,13 +44,14 @@ var serverCmd = &cobra.Command{
 			ipaddrs := GetLocalIP()
 			serverUrl = fmt.Sprintf("%s:%s", ipaddrs, port)
 		}
-		//ServerStart(serverUrl)
-		pterm.Error.Println("Functionality disabled")
+		initCSV()
+		ServerStart(serverUrl)
+		//pterm.Error.Println("Functionality disabled")
 	},
 }
 
 func init() {
-	//rootCmd.AddCommand(serverCmd)
+	rootCmd.AddCommand(serverCmd)
 	serverCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 }
 
