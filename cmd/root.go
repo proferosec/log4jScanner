@@ -18,9 +18,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 
 	"log4jScanner/utils"
 
@@ -32,6 +34,7 @@ var (
 	cfgFile string
 )
 
+var LogPath string
 var DebugFlag bool
 
 // rootCmd represents the base command when called without any subcommands
@@ -43,7 +46,6 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		utils.PrintHeader()
 		cmd.Usage()
 	},
 }
@@ -56,6 +58,8 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(utils.PrintHeader)
+	//initLog need to be run after header is been printed for output order
 	cobra.OnInitialize(initLog)
 
 	// Here you will define your flags and configuration settings.
@@ -65,10 +69,11 @@ func init() {
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.log4j_scanner.yaml)")
 
 	rootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "set log level to debug")
+	rootCmd.PersistentFlags().StringVar(&LogPath, "log-output", "", "Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
+	//rootCmd.Flags().BoolP("server", "s", false, "Run callback server")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -101,4 +106,17 @@ func initLog() {
 	if DebugFlag {
 		utils.Logger.SetLevel(log.DebugLevel)
 	}
+
+	if LogPath == "" {
+		LogPath = "log4jScanner.log"
+	}
+	file, err := os.OpenFile(LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		pterm.Warning.Println("failed to change log file location (using running folder), what:", err)
+		file, err = os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		if err != nil {
+			log.Fatal("Failed to log to file, what:", err)
+		}
+	}
+	utils.GetLogger().SetFile(file)
 }

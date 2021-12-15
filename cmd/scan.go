@@ -20,13 +20,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	"log4jScanner/utils"
 )
 
 // scanCmd represents the scan command
@@ -41,7 +40,6 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			pterm.DisableColor()
 		}
 
-		utils.PrintHeader()
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
 			log.Error("server flag error")
@@ -50,8 +48,14 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		}
 		// TODO: add cancel context
 		cidr, err := cmd.Flags().GetString("cidr")
-		if err != nil || cidr == "" {
-			fmt.Println("CIDR flag missing")
+		if err != nil {
+			log.Error("CIDR flag error")
+			cmd.Usage()
+			return
+		}
+		if cidr == "" {
+			log.Error("CIDR flag missing")
+			pterm.Error.Println("CIDR flag missing")
 			cmd.Usage()
 			return
 		}
@@ -81,17 +85,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
-
-		//LogPath, err = cmd.Flags().GetString("log-output")
-		//if err != nil {
-		//	fmt.Println("Error in log-output flag")
-		//	cmd.Usage()
-		//	return
-		//}
-		//
-		//if LogPath == "" {
-		//	LogPath = "log4jScanner.log"
-		//}
+		initCSV()
 
 		ctx := context.Background()
 		if !disableServer {
@@ -114,15 +108,22 @@ func init() {
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
-	scanCmd.Flags().String("csv-output", "",
+	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
-	//scanCmd.Flags().String("log-output","",
-	//	"Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
 	createPrivateIPBlocks()
 }
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
-	hosts, _ := Hosts(cidr)
+	hosts, err := Hosts(cidr)
+	//if err is not nil cidr wasn't parse correctly
+	if err != nil {
+		pterm.Error.Println("Failed to get hosts, what:", err)
+		//an error occurred and program should shut down, close the TCP server
+		if TCPServer != nil {
+			TCPServer.Stop()
+		}
+		return
+	}
 
 	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
 	// Scan for open ports, if there is an open port, add it to the chan
@@ -176,12 +177,27 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 }
 
 func PrintResults(resChan chan string) {
-	pterm.Println()
-	pterm.DefaultHeader.WithFullWidth().Println("Results")
-
 	close(resChan)
-	csvRecords := createCsvRecords(resChan)
-	saveCSV(csvRecords)
+	pterm.Println()
+	pterm.NewStyle(pterm.FgGreen).Printfln("Total requests: %d", len(resChan))
+	for res := range resChan {
+		fullRes := strings.Split(res, ",")
+		msg := fmt.Sprintf("Summary: %s:%s ==> %s", fullRes[1], fullRes[2], fullRes[3])
+		pterm.Info.Println(msg)
+		log.Info(msg)
+	}
+
+	if TCPServer != nil && TCPServer.sChan != nil {
+		pterm.Println()
+		pterm.NewStyle(pterm.FgGreen).Printfln("Total callbacks: %d", len(TCPServer.sChan))
+		close(TCPServer.sChan)
+		for suc := range TCPServer.sChan {
+			fullSuc := strings.Split(suc, ",")
+			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
+			pterm.Info.Println(msg)
+			log.Info(msg)
+		}
+	}
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {

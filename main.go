@@ -18,31 +18,25 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
+
 	"log4jScanner/cmd"
 	"log4jScanner/utils"
-	"os"
 )
 
 var (
-	Version   string
-	BuildTime string
+    Version   string
+    BuildTime string
 )
 
 func main() {
-	utils.SetVersion(Version)
-	//utils.PrintHeader()
-	file, err := os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	// TODO: fix to enable gosec
-	defer file.Close()
-	if err != nil {
-		log.Error("Failed to log to file")
-	}
+    utils.SetVersion(Version, BuildTime)
+    //utils.PrintHeader()
 
-	utils.InitLogger()
-	utils.GetLogger().SetFile(file)
-	log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
+    utils.InitLogger()
+    defer utils.Logger.Close()
+    log.WithFields(log.Fields{"buildTime": BuildTime}).Debugf("Version: ", Version)
 
-	//cmd.SetVersionTemplate("test")
-	//cmd.SetHelpFunc()
-	cmd.Execute()
+    //cmd.SetVersionTemplate("test")
+    //cmd.SetHelpFunc()
+    cmd.Execute()
 }

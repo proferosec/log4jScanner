@@ -18,7 +18,7 @@ func StartServer(ctx context.Context, serverUrl string) {
 	// TODO: make port configurable
 	if serverUrl != "" && !strings.Contains(serverUrl, ":") {
 		pterm.Error.Println("server url does not match HOST:PORT")
-		return
+		log.Fatal("server url does not match HOST:PORT")
 	}
 	url := strings.Split(serverUrl, ":")
 	localUrl := fmt.Sprintf("0.0.0.0:%s", url[1])
@@ -36,7 +36,9 @@ func (s *Server) ReportIP(conn net.Conn) {
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
-		s.sChan <- fmt.Sprintf("callback,%s,%s,", url[0], url[1])
+		resMsg := fmt.Sprintf("callback,%s,%s,", url[0], url[1])
+		updateCsvRecords(resMsg)
+		s.sChan <- resMsg
 	}
 	conn.Close()
 }
@@ -65,13 +67,13 @@ func NewServer(addr string) *Server {
 
 func (s *Server) Stop() {
 	spinnerSuccess, _ := pterm.DefaultSpinner.Start("Stopping TCP server")
-	time.Sleep(2 * time.Second)
+	time.Sleep(10 * time.Second)
 	if s == nil || s.listener == nil {
 		return
 	}
 	close(s.quit)
 	s.listener.Close()
-	spinnerSuccess.Success()
+	spinnerSuccess.Stop()
 	s.wg.Wait()
 }
 
