@@ -48,12 +48,13 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		// TODO: add cancel context
 		cidr, err := cmd.Flags().GetString("cidr")
 		if err != nil {
-			log.Error("server flag error")
+			log.Error("CIDR flag error")
 			cmd.Usage()
 			return
 		}
 		if cidr == "" {
 			log.Error("CIDR flag missing")
+			pterm.Error.Println("CIDR flag missing")
 			cmd.Usage()
 			return
 		}
