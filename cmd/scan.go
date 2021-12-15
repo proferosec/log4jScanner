@@ -122,7 +122,16 @@ func init() {
 }
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
-	hosts, _ := Hosts(cidr)
+	hosts, err := Hosts(cidr)
+	//if err is not nil cidr wasn't parse correctly
+	if err != nil {
+		pterm.Error.Println("Failed to get hosts, what:",err)
+		//an error occurred and program should shut down, close the TCP server
+		if TCPServer != nil {
+			TCPServer.Stop()
+		}
+		return
+	}
 
 	pterm.Info.Printf("Scanning %d addresses in %s\n", len(hosts), cidr)
 	// Scan for open ports, if there is an open port, add it to the chan
