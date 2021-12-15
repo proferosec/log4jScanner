@@ -23,6 +23,9 @@ import (
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"log4jScanner/utils"
 
@@ -36,6 +39,11 @@ var (
 
 var LogPath string
 var DebugFlag bool
+var logPathFlag string
+var CIDR string
+var logTime string
+
+const logDateFormat = "2006-01-02_15:04:05"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -69,7 +77,7 @@ func init() {
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.log4j_scanner.yaml)")
 
 	rootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "set log level to debug")
-	rootCmd.PersistentFlags().StringVar(&LogPath, "log-output", "", "Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
+	rootCmd.PersistentFlags().StringVar(&logPathFlag, "log-output", "", "Set name and path to save the log file (e.g  /tmp/log4jScanner.log). By default will be saved in the running folder")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -78,6 +86,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	logTime = time.Now().Format(logDateFormat)
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -107,8 +117,26 @@ func initLog() {
 		utils.Logger.SetLevel(log.DebugLevel)
 	}
 
-	if LogPath == "" {
-		LogPath = "log4jScanner.log"
+	// log name includes time & CIDR flag
+	if logPathFlag == "" && LogPath == "" {
+		LogPath = fmt.Sprintf("log4jScanner-%s-%s.log", CIDR, logTime)
+	} else if logPathFlag == "" {
+		LogP := fmt.Sprintf("log4jScanner-%s-%s.log", CIDR, logTime)
+		err := os.Rename(LogPath, LogP)
+		if err != nil {
+			log.Error(err)
+		}
+		LogPath = LogP
+	} else {
+		lSuffix := filepath.Ext(logPathFlag)
+		LogP := fmt.Sprintf("%s-%s-%s%s", strings.TrimSuffix(logPathFlag, lSuffix), CIDR, logTime, lSuffix)
+		if LogPath != "" {
+			err := os.Rename(LogPath, LogP)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+		LogPath = LogP
 	}
 	file, err := os.OpenFile(LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
@@ -119,4 +147,13 @@ func initLog() {
 		}
 	}
 	utils.GetLogger().SetFile(file)
+}
+
+// Format CIDR to add to log name
+func CIDRName(cidr string) {
+	cidr = strings.ReplaceAll(cidr, ".", "_")
+	cidr = strings.ReplaceAll(cidr, "/", "__")
+	CIDR = cidr
+
+	initLog()
 }
