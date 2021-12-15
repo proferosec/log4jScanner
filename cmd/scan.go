@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -115,7 +116,7 @@ func init() {
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
 	hosts, err := Hosts(cidr)
-	//if err is not nil cidr wasn't parse correctly
+	//if err is not nil cidr wasn't parse correctly or ip isn't private
 	if err != nil {
 		pterm.Error.Println("Failed to get hosts, what:",err)
 		//an error occurred and program should shut down, close the TCP server
@@ -221,7 +222,9 @@ func Hosts(cidr string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if !ip.IsPrivate() {
+		return nil, errors.New(fmt.Sprintf("addresses in cidr: %s isn't private IPs",cidr))
+	}
 	var ips []string
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
 		// Only scan for private IP addresses. If IP is not private, skip.
