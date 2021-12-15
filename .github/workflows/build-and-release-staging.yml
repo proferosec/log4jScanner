@@ -2,12 +2,11 @@ name: Build and release
 on:
   push:
     branches:
-      - staging
+      - "staging-pipeline"
 jobs:
   build-and-release:
     name: build-and-release-staging
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -20,13 +19,11 @@ jobs:
         run: make
       - name: Set env
         run: echo "VERSION=$(semver get alpha)" >> $GITHUB_ENV
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - uses: ncipollo/release-action@v1
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          title: "log4j scanner ${{ env.VERSION }} alpha"
-          files: |
-            release/*
+          artifacts: "release/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
