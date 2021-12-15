@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/pterm/pterm"
@@ -78,17 +79,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
-
-		//LogPath, err = cmd.Flags().GetString("log-output")
-		//if err != nil {
-		//	fmt.Println("Error in log-output flag")
-		//	cmd.Usage()
-		//	return
-		//}
-		//
-		//if LogPath == "" {
-		//	LogPath = "log4jScanner.log"
-		//}
+		initCSV()
 
 		ctx := context.Background()
 		if !disableServer {
@@ -184,8 +175,22 @@ func PrintResults(resChan chan string) {
 	pterm.DefaultHeader.WithFullWidth().Println("Results")
 
 	close(resChan)
-	csvRecords := createCsvRecords(resChan)
-	saveCSV(csvRecords)
+	for res := range resChan {
+		fullRes := strings.Split(res, ",")
+		msg := fmt.Sprintf("Summary: %s:%s ==> %s", fullRes[1], fullRes[2], fullRes[3])
+		pterm.Info.Println(msg)
+		log.Info(msg)
+	}
+
+	if TCPServer != nil && TCPServer.sChan != nil {
+		close(TCPServer.sChan)
+		for suc := range TCPServer.sChan {
+			fullSuc := strings.Split(suc, ",")
+			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
+			pterm.Info.Println(msg)
+			log.Info(msg)
+		}
+	}
 }
 
 func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {

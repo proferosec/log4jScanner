@@ -49,6 +49,7 @@ func ScanIP(targetUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan
 			log.Fatal("Error in response url parsing:", targetUrl)
 		}
 		msg := fmt.Sprintf("request,%s,%s,%d", strings.Replace(url[1], "/", "", -1), url[2], response.StatusCode)
+		updateCsvRecords(msg)
 		resChan <- msg
 		log.Infof(msg)
 	}
