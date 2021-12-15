@@ -23,7 +23,6 @@ import (
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
