@@ -24,6 +24,7 @@ jobs:
           artifacts: "release/*"
           commit: ${{ env.GITHUB_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.GITHUB_SHA }}
           
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@v2
