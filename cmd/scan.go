@@ -48,8 +48,14 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		}
 		// TODO: add cancel context
 		cidr, err := cmd.Flags().GetString("cidr")
-		if err != nil || cidr == "" {
-			fmt.Println("CIDR flag missing")
+		if err != nil {
+			log.Error("CIDR flag error")
+			cmd.Usage()
+			return
+		}
+		if cidr == "" {
+			log.Error("CIDR flag missing")
+			pterm.Error.Println("CIDR flag missing")
 			cmd.Usage()
 			return
 		}
@@ -102,7 +108,7 @@ func init() {
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
-	scanCmd.Flags().String("csv-output", "",
+	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
 	createPrivateIPBlocks()
 }
