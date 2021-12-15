@@ -2,7 +2,7 @@ name: Build and release
 on:
   push:
     branches:
-      - "staging-pipeline"
+      - "staging"
 jobs:
   build-and-release:
     name: build-and-release-staging
