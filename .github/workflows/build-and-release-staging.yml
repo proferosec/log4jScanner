@@ -34,7 +34,7 @@ jobs:
           files: |
             release/*
       - name: Slack Notification
-        uses: rCamp/action-slack-nottify@v2
+        uses: rCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_USERNAME: "GitHub Actions"
