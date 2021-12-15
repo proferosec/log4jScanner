@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -222,17 +221,14 @@ func Hosts(cidr string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	//if start of address space ip is not private or loopback it's considered public
-	tempIP := ip.Mask(ipnet.Mask)
-	if !(tempIP.IsPrivate() || tempIP.IsLoopback()) {
-		return nil, errors.New(fmt.Sprintf("addresses in cidr: %s isn't private IPs",cidr))
-	}
+
 	var ips []string
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
 		// Only scan for private IP addresses. If IP is not private, skip.
 		if !isPrivateIP(ip) {
-			log.Errorf("%s IP adress is not private", ip)
-			continue
+			badIPStatus := ip.String() + " IP address is not private"
+			pterm.Error.Println(badIPStatus)
+			log.Fatal(badIPStatus)
 		}
 		ips = append(ips, ip.String())
 	}
