@@ -28,7 +28,6 @@ You can use the tool to test for the top 100 HTTP\S ports using the `ports אop1
 ```
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
 
-log4jscanner.exe scan --cidr 192.168.7.0/24 ports slow
 ```
 
 ## Available flags
