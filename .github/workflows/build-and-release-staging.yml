@@ -33,13 +33,8 @@ jobs:
           title: "log4j scanner ${{ env.VERSION }}"
           files: |
             release/*
-      # - uses: ncipollo/release-action@v1
-      #   with:
-      #     name: Release ${{ env.VERSION }}
-      #     artifacts: "release/*"
-      #     tag: ${{ steps.tag.outputs.new_tag }}
-      #     token: ${{ secrets.GITHUB_TOKEN }}
       - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
+        uses: rCamp/action-slack-nottify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_USERNAME: "GitHub Actions"
