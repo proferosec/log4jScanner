@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"strings"
@@ -31,8 +32,15 @@ func StartServer(ctx context.Context, serverUrl string) {
 
 func (s *Server) ReportIP(conn net.Conn) {
 	callbackIP := conn.RemoteAddr().String()
+
+	buf := make([]byte, 4096)
+	reqLen, err := conn.Read(buf)
+	if err != nil {
+		log.Error("Error reading callback buffer", err.Error())
+	}
+
 	url := strings.Split(callbackIP, ":")
-	msg := fmt.Sprintf("SUCCESS: Remote addr: %s", url[0])
+	msg := fmt.Sprintf("SUCCESS: Remote addr: %s. Buf [%d]: %s", url[0], reqLen, hex.EncodeToString(buf[0:reqLen]))
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
@@ -40,6 +48,7 @@ func (s *Server) ReportIP(conn net.Conn) {
 		updateCsvRecords(resMsg)
 		s.sChan <- resMsg
 	}
+
 	conn.Close()
 }
 

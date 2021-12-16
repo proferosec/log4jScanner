@@ -194,7 +194,7 @@ func PrintResults(resChan chan string) {
 		close(TCPServer.sChan)
 		for suc := range TCPServer.sChan {
 			fullSuc := strings.Split(suc, ",")
-			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
+			msg := fmt.Sprintf("Summary: Callback from %s", fullSuc[1])
 			pterm.Info.Println(msg)
 			log.Info(msg)
 		}
