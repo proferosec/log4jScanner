@@ -20,7 +20,7 @@ The tool does not send any exploits to the vulnerable hosts, and is designed to 
 
 ## Example
 
-![example](movie.mp4)
+![example](https://github.com/proferosec/log4jScanner/blob/staging/movie.gif)
 
 In this example we run the tool against the `192.168.1.0/24` subnet
 
