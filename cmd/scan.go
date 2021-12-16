@@ -59,6 +59,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
+		CIDRName(cidr)
 
 		ports, err := cmd.Flags().GetString("ports")
 		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
@@ -115,7 +116,7 @@ func init() {
 
 func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
 	hosts, err := Hosts(cidr)
-	//if err is not nil cidr wasn't parse correctly
+	//if err is not nil cidr wasn't parse correctly or ip isn't private
 	if err != nil {
 		pterm.Error.Println("Failed to get hosts, what:", err)
 		//an error occurred and program should shut down, close the TCP server
@@ -193,7 +194,7 @@ func PrintResults(resChan chan string) {
 		close(TCPServer.sChan)
 		for suc := range TCPServer.sChan {
 			fullSuc := strings.Split(suc, ",")
-			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
+			msg := fmt.Sprintf("Summary: Callback from %s", fullSuc[1])
 			pterm.Info.Println(msg)
 			log.Info(msg)
 		}
@@ -227,8 +228,9 @@ func Hosts(cidr string) ([]string, error) {
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
 		// Only scan for private IP addresses. If IP is not private, skip.
 		if !isPrivateIP(ip) {
-			log.Errorf("%s IP adress is not private", ip)
-			continue
+			badIPStatus := ip.String() + " IP address is not private"
+			pterm.Error.Println(badIPStatus)
+			log.Fatal(badIPStatus)
 		}
 		ips = append(ips, ip.String())
 	}

