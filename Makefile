@@ -1,7 +1,7 @@
 PROJECT_NAME=log4jScanner
 GOPATH=$(shell go env GOPATH)
 
-VERSION=$(shell $(GOPATH)/bin/semver get alpha)
+VERSION=$(shell $(GOPATH)/bin/semver get release)
 BUILD_TIME=$(shell TZ=UTC date -u '+%Y-%m-%d_%I:%M:%S%p')
 
 all: clean init build release

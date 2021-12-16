@@ -40,7 +40,7 @@ func (s *Server) ReportIP(conn net.Conn) {
 	}
 
 	url := strings.Split(callbackIP, ":")
-	msg := fmt.Sprintf("SUCCESS: Remote addr: %s. Buf [%d]: %s", url[0], reqLen, hex.EncodeToString(buf[0:reqLen]))
+	msg := fmt.Sprintf("SUCCESS: Remote addr: %s Buf[%d]: %s", url[0], reqLen, hex.EncodeToString(buf[0:reqLen]))
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
