@@ -40,7 +40,7 @@ The tools does the following:
 However, the logged IP address might not belong to the actual vulnerable server (it might be behind a NAT or a proxy)
 * A good rule of thumb, if the callback IP address is not in the subnet scanned, the vulnerable server is behind a NAT 
 (e.g. a docker container responds with its own IP address, not the host running the docker)
-* The netowrk traffic created by the tool might be classified as malicious by security products, or cause a lot of noise for monitoring services
+* The network traffic created by the tool might be classified as malicious by security products, or cause a lot of noise for monitoring services
 * The TCP server created by the tool assumes that it is open to receive inbound traffic. That means that opening a FW inbound rule on the host running the scan is needed.
 
 ### What to do if the vulnerable server is behind a NAT?
@@ -49,8 +49,8 @@ Let's assume that we are scannon `192.168.1.0/24` and a vulnerable application i
 
 The tool will scan that host, sending requests to `192.168.1.2` but the callback we get will be from '172.10.0.1' (which is the internal docker subnet)
 
-what we can is minimize the search. we can get the list of all successful requests made by the scanner from the log, and the enumerate 
-through them, one by one, to see which one is tirggering the callback.
+what we can do is minimize the search. we can get the list of all successful requests made by the scanner from the log, and the enumerate 
+through them, one by one, to see which one is triggering the callback.
 
 as this is a bit tedious, we plan on automating this if this becomes a real issue 
 
@@ -66,11 +66,11 @@ log4jScanner.exe scan --cidr 192.168.7.0/24
 This will test the top 10 HTTP\S ports on the hosts in the subnet,  print any vulnerable hosts to the screen, 
 and generate a log + summary CSV in the same location as the binary including all the attempts (both vulnerable and non-vulnerable).
 
-In order to identify which hosts are vulnerable just lookup the word `SUCCESS` in the log, you can grep the log for the keywork `SUCCESS` to get just the results.
-Also, the tool generates a CSV file containing all the results, filter on `vulenrable` to get the vulnerable hosts.
+In order to identify which hosts are vulnerable just look up the word `SUCCESS` in the log, you can grep the log for the keywork `SUCCESS` to get just the results.
+Also, the tool generates a CSV file containing all the results, filter on `vulnerable` to get the vulnerable hosts.
 
 ### Additional usage options
-You can use the tool to test for the top 100 HTTP\S ports using the `ports אop100` flag, or for the entire port range using `ports slow` - Keep in mind, using `ports slow` will take time to complete.
+You can use the tool to test for the top 100 HTTP\S ports using the `ports top100` flag, or for the entire port range using `ports slow` - Keep in mind, using `ports slow` will take time to complete.
 
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
@@ -86,7 +86,7 @@ if you wish to disable the callback server, use `--noserver`
 ### Available flags
 
 * `--nocolor` provide output without color
-* `--ports` either top10 (default) or top100 (list of the 100 most commong web ports)
+* `--ports` either top10 (default) or top100 (list of the 100 most common web ports)
 * `--noserver` only scan, do not use a local callback server
 
 ### Methods Used
@@ -103,7 +103,7 @@ Run the docker compose in [here](https://github.com/proferosec/log4jScanner/tree
 
 This will provide you with a container vulnerable on port 8080 for HTTP and port 8443 for HTTPS.
 
-Alternativley, you can also run this:
+Alternatively, you can also run this:
 1. Vuln. target: 
    1. `docker run --rm --name vulnerable-app -p 8080:8080 ghcr.io/christophetd/log4shell-vulnerable-app`
 2. spin a server for incoming requests
