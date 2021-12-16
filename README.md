@@ -5,6 +5,14 @@
 This tool provides you with the ability to scan internal (only) subnets for vulnerable log4j web services. It will try to send a JNDI payload to each one (via a User-Agent string and a HTTP header) to a list of common HTTP/S ports. 
 For every response it receives, it will log the responding host IP so we can get a list of the vulnerable servers. 
 
+## Latest Release
+
+| Platform | Binary   | Checksum |
+|----------|----------|----------|
+| Windows  |[log4jscanner-windows.zip](https://github.com/proferosec/log4jScanner/releases/download/latest/log4jscanner-windows.zip) | [SHA256](https://github.com/proferosec/log4jScanner/releases/download/latest/windows.sha256.txt) |
+| Linux  |[log4jscanner-linux.zip](https://github.com/proferosec/log4jScanner/releases/download/latest/log4jscanner-linux.zip) | [SHA256](https://github.com/proferosec/log4jScanner/releases/download/latest/linux.sha256.txt) |
+| MacOS  |[log4jscanner-darwin.zip](https://github.com/proferosec/log4jScanner/releases/download/latest/log4jscanner-darwin.zip) | [SHA256](https://github.com/proferosec/log4jScanner/releases/download/latest/darwin.sha256.txt) |
+
 ## Basic usage
 Download the tool for your specific platform (Windows, Linux or Mac) from the [release](https://github.com/proferosec/log4jScanner/releases/tag/latest) page.
 To run the tool, make sure port 5555 on the host is available, and specify the subnet to scan (it is possible to configure a separate address using the `--server` flag):
