@@ -29,7 +29,7 @@ func initCSV() {
 
 	// Set headers
 	csvRecords := [][]string{
-		{"type", "ip"},
+		{"Type", "IP", "Port", "StatusCode"},
 	}
 
 	// create a CSV file and write headers
@@ -80,8 +80,7 @@ func updateCsvRecords(resultMsg string) {
 
 	// append new result to existing CSV content
 	fullRes := strings.Split(resultMsg, ",")
-	csvRes := []string{fullRes[0], fullRes[1]} // only write to CSV 'request' and the IP address
-	csvRecords = append(csvRecords, csvRes)
+	csvRecords = append(csvRecords, fullRes)
 
 	// write current and new content to CSV
 	writeCSV(csvRecords)

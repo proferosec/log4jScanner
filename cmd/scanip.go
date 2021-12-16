@@ -15,13 +15,14 @@ import (
 
 func ScanIP(url string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
 	defer wg.Done()
+	const timeoutInterval = 2
 
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 2 * timeoutInterval * time.Second,
 		Transport: &http.Transport{
-			TLSHandshakeTimeout:   1 * time.Second,
-			ResponseHeaderTimeout: 1 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
+			TLSHandshakeTimeout:   timeoutInterval * time.Second,
+			ResponseHeaderTimeout: timeoutInterval * time.Second,
+			ExpectContinueTimeout: timeoutInterval * time.Second,
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		},
 	}
