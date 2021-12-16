@@ -1,4 +1,4 @@
-PROJECT_NAME=log4jscanner
+PROJECT_NAME=log4jScanner
 GOPATH=$(shell go env GOPATH)
 
 VERSION=$(shell $(GOPATH)/bin/semver get alpha)

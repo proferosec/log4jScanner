@@ -31,12 +31,12 @@ func StartServer(ctx context.Context, serverUrl string) {
 
 func (s *Server) ReportIP(conn net.Conn) {
 	callbackIP := conn.RemoteAddr().String()
-	msg := fmt.Sprintf("SUCCESS: Remote addr: %s", callbackIP)
 	url := strings.Split(callbackIP, ":")
+	msg := fmt.Sprintf("SUCCESS: Remote addr: %s", url[0])
 	log.Info(msg)
 	pterm.Success.Println(msg)
 	if s != nil && s.sChan != nil {
-		resMsg := fmt.Sprintf("callback,%s,%s,", url[0], url[1])
+		resMsg := fmt.Sprintf("vulnerable,%s,,", url[0])
 		updateCsvRecords(resMsg)
 		s.sChan <- resMsg
 	}
