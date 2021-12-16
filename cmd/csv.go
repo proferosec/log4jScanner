@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -15,12 +16,14 @@ var csvMU sync.Mutex
 
 func checkCsvPath() {
 	if csvPath == "" {
-		csvPath = "log4jScanner-results.csv"
-	}
-
-	if !strings.HasSuffix(strings.ToLower(csvPath), ".csv") {
-		pterm.Warning.Println("csv-output path is not a CSV file. Output will be saved to running folder as log4jScanner-results.csv")
-		csvPath = "log4jScanner-results.csv"
+		csvPath = fmt.Sprintf("log4jScanner-results-%s-%s.csv", CIDR, logTime)
+	} else {
+		if !strings.HasSuffix(strings.ToLower(csvPath), ".csv") {
+			pterm.Warning.Println("csv-output path is not a CSV file. Output will be saved to running folder as log4jScanner-results-[cidr]-[timestamp].csv")
+			csvPath = fmt.Sprintf("log4jScanner-results-%s-%s.csv", CIDR, logTime)
+		} else {
+			csvPath = fmt.Sprintf("%s-%s-%s.csv", strings.TrimSuffix(csvPath, ".csv"), CIDR, logTime)
+		}
 	}
 }
 
