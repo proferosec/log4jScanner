@@ -22,6 +22,9 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"os"
+	"bufio"
+	"strconv"
 
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
@@ -62,7 +65,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		CIDRName(cidr)
 
 		ports, err := cmd.Flags().GetString("ports")
-		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
+		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10" && !strings.HasPrefix(ports, "@")) {
 			fmt.Println("error in ports flag")
 			cmd.Usage()
 			return
@@ -148,9 +151,21 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 		//}
 	} else if portsFlag == "top100" { // top100 will go over to 100 ports
 		ports = top100WebPorts
+	} else if strings.HasPrefix(portsFlag, "@") {
+		ports, err = ReadPorts(portsFlag[1:])
+		if err != nil {
+			pterm.Error.Println(err)
+			log.Fatal(err)
+		}
+		if len(ports) == 0 {
+			noPorts := "No ports defined in file " + portsFlag[1:]
+			pterm.Error.Println(noPorts)
+			log.Fatal(noPorts)
+		}
 	} else { // Fast scan - will go over the ports from the top 10 ports list.
 		ports = top10WebPorts
 	}
+	pterm.Info.Printf("Scanning %d ports\n", len(ports))
 
 	resChan := make(chan string, 10000)
 
@@ -175,6 +190,29 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 		TCPServer.Stop()
 	}
 	PrintResults(resChan)
+}
+
+func ReadPorts(portsFile string) ([]int, error) {
+	var ports []int
+
+	file, err := os.Open(portsFile)
+	if err != nil {
+		return ports, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		port, err1 := strconv.Atoi(scanner.Text())
+		if err1 != nil {
+			log.Warn(err1)
+		} else {
+			ports = append(ports, port)
+		}
+	}
+	err = scanner.Err()
+
+	return ports, err
 }
 
 func PrintResults(resChan chan string) {
