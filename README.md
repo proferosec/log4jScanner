@@ -90,6 +90,7 @@ if you wish to disable the callback server, use `--noserver`
 * `--nocolor` provide output without color
 * `--ports` either top10 (default) or top100 (list of the 100 most common web ports)
 * `--noserver` only scan, do not use a local callback server
+* `--ports=slow` is currently disabled due to a bug, to be fixed in the next release
 
 ### Methods Used
 
