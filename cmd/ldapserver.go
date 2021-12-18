@@ -28,7 +28,7 @@ func StartServer(ctx context.Context, serverUrl string) {
 	listenUrl.Host = "0.0.0.0:" + listenUrl.Port()
 
 	pterm.Info.Println("Starting internal LDAP server on", listenUrl.Host)
-	log.Info("Starting LDAP server on", listenUrl.Host)
+	log.Info("Starting LDAP server on ", listenUrl.Host)
 	LDAPServer = NewServer()
 	LDAPServer.sChan = make(chan string, 10000)
 
