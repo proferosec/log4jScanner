@@ -154,7 +154,7 @@ func init() {
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
 	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
-	scanCmd.Flags().Bool("allow-public-ips",false,"allowing to scan public IPs")
+	scanCmd.Flags().Bool("allow-public-ips", false, "allowing to scan public IPs")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By default scans top 10 ports;"+
@@ -207,8 +207,8 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 			ports[i] = startPort + i
 			if len(ports) > portRangeSizeLimit {
 				pterm.Error.Printfln("port range is limited to %v ports", portRangeSizeLimit)
-				if TCPServer != nil {
-					TCPServer.Stop()
+				if LDAPServer != nil {
+					LDAPServer.Stop()
 				}
 				return
 			}
