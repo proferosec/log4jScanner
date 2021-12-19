@@ -70,7 +70,7 @@ func (s *Server) handleSearch(w ldap.ResponseWriter, m *ldap.Message) {
 
 	vulnerableLocation := strings.ReplaceAll(string(r.BaseObject()), "_", ":")
 
-	res := ldap.NewBindResponse(ldap.LDAPResultSuccess)
+	res := ldap.NewSearchResultDoneResponse(ldap.LDAPResultSuccess)
 	w.Write(res)
 
 	s.ReportIP(vulnerableLocation)
