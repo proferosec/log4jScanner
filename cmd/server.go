@@ -36,7 +36,10 @@ var serverCmd = &cobra.Command{
 		serverUrl, err := cmd.Flags().GetString("server")
 		if err != nil {
 			fmt.Println("Error in server flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		if serverUrl == "" {
@@ -81,7 +84,11 @@ func PrintServerResults(csvRecords [][]string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 	w := csv.NewWriter(f)
 	defer w.Flush()
 

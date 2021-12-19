@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -40,7 +41,11 @@ func initCSV() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
@@ -53,14 +58,18 @@ func initCSV() {
 
 func readCsv() (csvRecords [][]string, err error) {
 	// open and read csv
-	f, err := os.Open(csvPath)
+	f, err := os.Open(filepath.Clean(csvPath))
 	if err == os.ErrNotExist {
 		f, _ = os.Create(csvPath)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	r := csv.NewReader(f)
 	csvRecords, err = r.ReadAll()
@@ -95,7 +104,11 @@ func writeCSV(csvRecords [][]string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 	w := csv.NewWriter(f)
 	defer w.Flush()
 

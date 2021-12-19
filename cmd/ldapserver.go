@@ -100,5 +100,8 @@ func (s *Server) Stop() {
 	timeout := LDAPServer.timeout
 	time.Sleep(timeout)
 	s.server.Stop()
-	spinnerSuccess.Stop()
+	err := spinnerSuccess.Stop()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

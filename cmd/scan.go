@@ -43,13 +43,19 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
 			pterm.Error.Println("server flag error")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		publicIPAllowed, err := cmd.Flags().GetBool("allow-public-ips")
 		if err != nil {
 			pterm.Error.Println("allow-public-ip flag error")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		if publicIPAllowed {
@@ -59,13 +65,19 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		cidr, err := cmd.Flags().GetString("cidr")
 		if err != nil {
 			pterm.Error.Println("CIDR flag error")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		if cidr == "" {
 			log.Error("CIDR flag missing")
 			pterm.Error.Println("CIDR flag missing")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		CIDRName(cidr)
@@ -73,14 +85,20 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		ports, err := cmd.Flags().GetString("ports")
 		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
 			pterm.Error.Println("error in ports flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 
 		serverUrl, err := cmd.Flags().GetString("server")
 		if err != nil {
 			pterm.Error.Println("Error in server flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		if serverUrl == "" {
@@ -92,7 +110,10 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		csvPath, err = cmd.Flags().GetString("csv-output")
 		if err != nil {
 			pterm.Error.Println("Error in csv-output flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		initCSV()
@@ -100,7 +121,10 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		serverTimeout, err := cmd.Flags().GetInt("timeout")
 		if err != nil {
 			pterm.Error.Println("error in timeout flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 
