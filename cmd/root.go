@@ -54,7 +54,10 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
+		err := cmd.Usage()
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
@@ -138,7 +141,7 @@ func initLog() {
 		}
 		LogPath = LogP
 	}
-	file, err := os.OpenFile(LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	file, err := os.OpenFile(filepath.Clean(LogPath), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		pterm.Warning.Println("failed to change log file location (using running folder), what:", err)
 		file, err = os.OpenFile("log4jScanner.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
