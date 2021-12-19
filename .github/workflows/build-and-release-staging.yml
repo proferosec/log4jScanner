@@ -16,7 +16,10 @@ jobs:
         with:
           go-version: 1.17.5
       - name: run make
-        run: make
+        run: |
+          make init
+          make sec || true
+          make release
       - name: Set env
         run: echo "VERSION=$(semver get alpha)" >> $GITHUB_ENV
       - name: Push tag
