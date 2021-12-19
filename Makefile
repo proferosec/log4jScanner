@@ -4,7 +4,7 @@ GOPATH=$(shell go env GOPATH)
 VERSION=$(shell $(GOPATH)/bin/semver get alpha)
 BUILD_TIME=$(shell TZ=UTC date -u '+%Y-%m-%d_%I:%M:%S%p')
 
-all: clean init build release
+all: clean init sec build release
 
 build: build-windows build-darwin build-linux
 release: release-windows release-darwin release-linux
@@ -13,9 +13,14 @@ test:
 	go test .
 
 init:
-	go get -u github.com/maykonlf/semver-cli/cmd/semver 
+	go get -u \
+		github.com/maykonlf/semver-cli/cmd/semver \
+	  github.com/securego/gosec/v2/cmd/gosec
 
-upver:
+sec: init
+	$(GOPATH)/bin/gosec -exclude=G402 ./...  
+
+upver: init
 	$(GOPATH)/bin/semver up alpha
 
 build-windows:

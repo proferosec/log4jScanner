@@ -62,10 +62,18 @@ In order to identify which hosts are vulnerable just look up the word `SUCCESS` 
 Also, the tool generates a CSV file containing all the results, filter on `vulnerable` to get the vulnerable hosts.
 
 ### Additional usage options
-You can use the tool to test for the top 100 HTTP\S ports using the `ports top100` flag, or for the entire port range using `ports slow` - Keep in mind, using `ports slow` will take time to complete.
+You can use the tool to test for the top 100 HTTP\S ports using the `ports top100` flag, insert a single custom port or a range of ports (limited up to 1024 ports) .
 
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
+```
+
+```bash
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=9000
+```
+
+```bash
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=9000:9005
 ```
 
 it is possible to use a non-default configuration for the callback server
@@ -78,13 +86,13 @@ if you wish to disable the callback server, use `--noserver`
 ### Available flags
 
 * `--nocolor` provide output without color
-* `--ports` either top10 (default) or top100 (list of the 100 most common web ports)
+* `--ports` either top10 (default), top100 (list of the 100 most common web ports), a custom single port or a range of ports
 * `--noserver` only scan, do not use a local callback server
 * `--timeout=10` is setting the server shutdown timeout to 10 seconds
 
 ### Methods Used
 
-Currently the tool uses the following areas to try and send an exploit
+Currently, the tool uses the following areas to try and send an exploit
 
 ### Test setup
 

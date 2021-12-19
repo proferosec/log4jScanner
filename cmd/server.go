@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"log4jScanner/utils"
 	"os"
 	"strings"
 
@@ -36,7 +37,10 @@ var serverCmd = &cobra.Command{
 		serverUrl, err := cmd.Flags().GetString("server")
 		if err != nil {
 			fmt.Println("Error in server flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		if serverUrl == "" {
@@ -81,7 +85,7 @@ func PrintServerResults(csvRecords [][]string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer utils.FileCloser(f)
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
