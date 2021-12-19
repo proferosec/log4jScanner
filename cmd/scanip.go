@@ -47,6 +47,7 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 		log.Fatal(err)
 	}
 	request.Header.Set("User-Agent", targetUserAgent)
+	addCommonHeaders(&request.Header,targetHeader)
 	request.Header.Add("X-Api-Version", targetHeader)
 	response, err := client.Do(request)
 	if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
