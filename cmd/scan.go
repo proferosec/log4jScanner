@@ -121,7 +121,7 @@ func init() {
 	// and all subcommands, e.g.:
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
-	scanCmd.Flags().Bool("nocolor", false, "remove colors from output"
+	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
 	scanCmd.Flags().Bool("allow-public-ips",false,"allowing to scan public IPs")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
