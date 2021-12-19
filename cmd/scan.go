@@ -55,6 +55,9 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
+		if publicIPAllowed {
+			pterm.Warning.Println("Scanning public IPs should be done with care, use at your own risk")
+		}
 		// TODO: add cancel context
 		cidr, err := cmd.Flags().GetString("cidr")
 		if err != nil {
