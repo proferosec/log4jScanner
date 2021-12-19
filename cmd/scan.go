@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//needed for "allow-public-ip" flag
+//needed for "allow-public-ips" flag
 var publicIPAllowed bool
 
 // scanCmd represents the scan command
