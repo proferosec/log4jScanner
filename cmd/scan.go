@@ -100,25 +100,37 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 				r := strings.Split(ports, ":")
 				if len(r) != 2 {
 					pterm.Error.Println("error in ports flag")
-					cmd.Usage()
+					err = cmd.Usage()
+					if err != nil {
+						log.Fatal(err)
+					}
 					return
 				}
 
 				p1, err := strconv.Atoi(r[0])
 				if err != nil {
 					pterm.Error.Println("error in ports flag")
-					cmd.Usage()
+					err = cmd.Usage()
+					if err != nil {
+						log.Fatal(err)
+					}
 					return
 				}
 				p2, err := strconv.Atoi(r[1])
 				if err != nil {
 					pterm.Error.Println("error in ports flag")
-					cmd.Usage()
+					err = cmd.Usage()
+					if err != nil {
+						log.Fatal(err)
+					}
 					return
 				}
 				if p2 < p1 {
 					pterm.Error.Println("error in ports flag")
-					cmd.Usage()
+					err = cmd.Usage()
+					if err != nil {
+						log.Fatal(err)
+					}
 					return
 				}
 			}
