@@ -4,6 +4,7 @@ import (
     log "github.com/sirupsen/logrus"
     "io/ioutil"
     "os"
+    "path/filepath"
 )
 
 //FileCloser is a closing a file and checking the error
@@ -24,8 +25,11 @@ func RenameFile(oldPath string, newPath string) ([]byte, error) {
     if err == nil {
         return nil, nil
     }
-    GetLogger().File.Close()
-    data, err := ioutil.ReadFile(oldPath)
+    err = GetLogger().File.Close()
+    if err != nil {
+        return nil, err
+    }
+    data, err := ioutil.ReadFile(filepath.Clean(oldPath))
     if err != nil {
         return nil, err
     }

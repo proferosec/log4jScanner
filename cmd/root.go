@@ -151,7 +151,10 @@ func initLog() {
 		}
 	}
 	if fileData != nil {
-		file.Write(fileData)
+		_, err = file.Write(fileData)
+		if err != nil {
+			pterm.Error.Println("failed to write pre-logs to file")
+		}
 	}
 	utils.GetLogger().SetFile(file)
 }
