@@ -42,14 +42,14 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
-			log.Error("server flag error")
+			pterm.Error.Println("server flag error")
 			cmd.Usage()
 			return
 		}
 		// TODO: add cancel context
 		cidr, err := cmd.Flags().GetString("cidr")
 		if err != nil {
-			log.Error("CIDR flag error")
+			pterm.Error.Println("CIDR flag error")
 			cmd.Usage()
 			return
 		}
@@ -63,14 +63,14 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		ports, err := cmd.Flags().GetString("ports")
 		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
-			fmt.Println("error in ports flag")
+			pterm.Error.Println("error in ports flag")
 			cmd.Usage()
 			return
 		}
 
 		serverUrl, err := cmd.Flags().GetString("server")
 		if err != nil {
-			fmt.Println("Error in server flag")
+			pterm.Error.Println("Error in server flag")
 			cmd.Usage()
 			return
 		}
@@ -82,15 +82,22 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		csvPath, err = cmd.Flags().GetString("csv-output")
 		if err != nil {
-			fmt.Println("Error in csv-output flag")
+			pterm.Error.Println("Error in csv-output flag")
 			cmd.Usage()
 			return
 		}
 		initCSV()
 
+		serverTimeout, err := cmd.Flags().GetInt("timeout")
+		if err != nil {
+			pterm.Error.Println("error in timeout flag")
+			cmd.Usage()
+			return
+		}
+
 		ctx := context.Background()
 		if !disableServer {
-			StartServer(ctx, serverUrl)
+			StartServer(ctx, serverUrl, serverTimeout)
 		}
 		ScanCIDR(ctx, cidr, ports, serverUrl)
 	},
@@ -111,6 +118,7 @@ func init() {
 		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
 	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
+	scanCmd.Flags().Int("timeout", 10, "Duration of time to wait before closing the callback server, in secods")
 	createPrivateIPBlocks()
 }
 
@@ -201,7 +209,7 @@ func PrintResults(resChan chan string) {
 		close(LDAPServer.sChan)
 		for suc := range LDAPServer.sChan {
 			fullSuc := strings.Split(suc, ",")
-			msg := fmt.Sprintf("Summary: Callback from %s", fullSuc[1])
+			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
 			pterm.Info.Println(msg)
 			log.Info(msg)
 		}

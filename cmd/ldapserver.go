@@ -15,10 +15,9 @@ import (
 
 var LDAPServer *Server
 
-func StartServer(ctx context.Context, serverUrl string) {
+func StartServer(ctx context.Context, serverUrl string, serverTimeout int) {
 	pterm.Info.Println("Server URL: " + serverUrl)
 	log.Info("Server URL: " + serverUrl)
-
 	listenUrl, err := url.Parse("//" + serverUrl)
 	if err != nil {
 		pterm.Error.Println("Failed to parse server url")
@@ -31,6 +30,7 @@ func StartServer(ctx context.Context, serverUrl string) {
 	log.Info("Starting LDAP server on ", listenUrl.Host)
 	LDAPServer = NewServer()
 	LDAPServer.sChan = make(chan string, 10000)
+	LDAPServer.timeout = time.Duration(serverTimeout) * time.Second
 
 	go LDAPServer.server.ListenAndServe(listenUrl.Host)
 }
@@ -52,8 +52,9 @@ func (s *Server) ReportIP(vulnerableServiceLocation string) {
 }
 
 type Server struct {
-	server *ldap.Server
-	sChan  chan string
+	server  *ldap.Server
+	sChan   chan string
+	timeout time.Duration
 }
 
 func (s *Server) handleBind(w ldap.ResponseWriter, m *ldap.Message) {
@@ -65,7 +66,7 @@ func (s *Server) handleBind(w ldap.ResponseWriter, m *ldap.Message) {
 func (s *Server) handleSearch(w ldap.ResponseWriter, m *ldap.Message) {
 	r := m.GetSearchRequest()
 
-	pterm.Info.Println("Got LDAP search request: " + r.BaseObject())
+	//pterm.Info.Println("Got LDAP search request: " + r.BaseObject())
 	log.Info("Got LDAP search request: " + r.BaseObject())
 
 	vulnerableLocation := strings.ReplaceAll(string(r.BaseObject()), "_", ":")
@@ -96,7 +97,8 @@ func NewServer() *Server {
 
 func (s *Server) Stop() {
 	spinnerSuccess, _ := pterm.DefaultSpinner.Start("Stopping LDAP server")
-	time.Sleep(10 * time.Second)
+	timeout := LDAPServer.timeout
+	time.Sleep(timeout)
 	s.server.Stop()
 	spinnerSuccess.Stop()
 }

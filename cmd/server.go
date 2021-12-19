@@ -56,7 +56,7 @@ func init() {
 }
 
 func ServerStart(serverUrl string) {
-	StartServer(nil, serverUrl)
+	StartServer(nil, serverUrl, 10)
 	pterm.Info.Println("Press ctr-l-c to exit")
 	for {
 	}
