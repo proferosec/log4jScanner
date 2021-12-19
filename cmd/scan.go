@@ -73,7 +73,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		ports, err := cmd.Flags().GetString("ports")
 		if err != nil {
-			fmt.Println("error in ports flag")
+			pterm.Error.Println("error in ports flag")
 			cmd.Usage()
 			return
 		}
@@ -84,25 +84,25 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 				// check if ports are ints seperated by colon
 				r := strings.Split(ports, ":")
 				if len(r) != 2 {
-					fmt.Println("error in ports flag")
+					pterm.Error.Println("error in ports flag")
 					cmd.Usage()
 					return
 				}
 
 				p1, err := strconv.Atoi(r[0])
 				if err != nil {
-					fmt.Println("error in ports flag")
+					pterm.Error.Println("error in ports flag")
 					cmd.Usage()
 					return
 				}
 				p2, err := strconv.Atoi(r[1])
 				if err != nil {
-					fmt.Println("error in ports flag")
+					pterm.Error.Println("error in ports flag")
 					cmd.Usage()
 					return
 				}
 				if p2 < p1 {
-					fmt.Println("error in ports flag")
+					pterm.Error.Println("error in ports flag")
 					cmd.Usage()
 					return
 				}
