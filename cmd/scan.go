@@ -28,6 +28,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//needed for "allow-public-ip" flag
+var publicIPAllowed bool
+
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
 	Use:   "scan",
@@ -43,6 +46,12 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
 			pterm.Error.Println("server flag error")
+			cmd.Usage()
+			return
+		}
+		publicIPAllowed, err = cmd.Flags().GetBool("allow-public-ips")
+		if err != nil {
+			log.Error("allow-public-ip flag error")
 			cmd.Usage()
 			return
 		}
@@ -112,7 +121,8 @@ func init() {
 	// and all subcommands, e.g.:
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
-	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
+	scanCmd.Flags().Bool("nocolor", false, "remove colors from output"
+	scanCmd.Flags().Bool("allow-public-ips",false,"allowing to scan public IPs")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
@@ -241,8 +251,9 @@ func Hosts(cidr string) ([]string, error) {
 
 	var ips []string
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		// Only scan for private IP addresses. If IP is not private, skip.
-		if !isPrivateIP(ip) {
+
+		//if public ip scanning isn't allowed Only scan for private IP addresses. If IP is not private, terminate with error.
+		if !publicIPAllowed && !isPrivateIP(ip) {
 			badIPStatus := ip.String() + " IP address is not private"
 			pterm.Error.Println(badIPStatus)
 			log.Fatal(badIPStatus)
