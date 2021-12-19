@@ -119,24 +119,25 @@ func initLog() {
 	if DebugFlag {
 		utils.Logger.SetLevel(log.DebugLevel)
 	}
-
+	var fileData []byte
+	var renameErr error
 	// log name includes time & CIDR flag
 	if logPathFlag == "" && LogPath == "" {
 		LogPath = fmt.Sprintf("log4jScanner-%s-%s.log", CIDR, logTime)
 	} else if logPathFlag == "" {
 		LogP := fmt.Sprintf("log4jScanner-%s-%s.log", CIDR, logTime)
-		err := os.Rename(LogPath, LogP)
-		if err != nil {
-			log.Error(err)
+		fileData, renameErr = utils.RenameFile(LogPath,LogP)
+		if renameErr != nil {
+			log.Error(renameErr)
 		}
 		LogPath = LogP
 	} else {
 		lSuffix := filepath.Ext(logPathFlag)
 		LogP := fmt.Sprintf("%s-%s-%s%s", strings.TrimSuffix(logPathFlag, lSuffix), CIDR, logTime, lSuffix)
 		if LogPath != "" {
-			err := os.Rename(LogPath, LogP)
-			if err != nil {
-				log.Error(err)
+			fileData, renameErr = utils.RenameFile(LogPath,LogP)
+			if renameErr != nil {
+				log.Error(renameErr)
 			}
 		}
 		LogPath = LogP
@@ -148,6 +149,9 @@ func initLog() {
 		if err != nil {
 			log.Fatal("Failed to log to file, what:", err)
 		}
+	}
+	if fileData != nil {
+		file.Write(fileData)
 	}
 	utils.GetLogger().SetFile(file)
 }
