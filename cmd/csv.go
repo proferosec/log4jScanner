@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"log4jScanner/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,11 +42,7 @@ func initCSV() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer utils.FileCloser(f)
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
@@ -65,11 +62,7 @@ func readCsv() (csvRecords [][]string, err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer utils.FileCloser(f)
 
 	r := csv.NewReader(f)
 	csvRecords, err = r.ReadAll()
@@ -104,11 +97,7 @@ func writeCSV(csvRecords [][]string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer utils.FileCloser(f)
 	w := csv.NewWriter(f)
 	defer w.Flush()
 

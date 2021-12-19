@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"log4jScanner/utils"
 	"os"
 	"strings"
 
@@ -84,11 +85,7 @@ func PrintServerResults(csvRecords [][]string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer utils.FileCloser(f)
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
