@@ -2,9 +2,7 @@ package utils
 
 import (
     log "github.com/sirupsen/logrus"
-    "io/ioutil"
     "os"
-    "path/filepath"
 )
 
 //FileCloser is a closing a file and checking the error
@@ -19,23 +17,19 @@ func FileCloser(f *os.File) {
 //RenameFile tries to rename the file,
 //on success return (nil,nil)
 //on failure return (nil,err) if can't read file content, (data,nil) if was able to read file content
-func RenameFile(oldPath string, newPath string) ([]byte, error) {
+func RenameFile(oldPath string, newPath string) error {
     err := os.Rename(oldPath,newPath)
     //if rename was successful do nothing
     if err == nil {
-        return nil, nil
+        return nil
     }
     err = GetLogger().File.Close()
     if err != nil {
-        return nil, err
+        return err
     }
-    data, err := ioutil.ReadFile(filepath.Clean(oldPath))
+    err = os.Rename(oldPath,newPath)
     if err != nil {
-        return nil, err
+        return err
     }
-    err = os.Remove(oldPath)
-    if err != nil {
-        return nil, err
-    }
-    return data, nil
+    return nil
 }
