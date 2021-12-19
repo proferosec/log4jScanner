@@ -43,14 +43,23 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		disableServer, err := cmd.Flags().GetBool("noserver")
 		if err != nil {
-			log.Error("server flag error")
+			pterm.Error.Println("server flag error")
 			cmd.Usage()
 			return
+		}
+		publicIPAllowed, err := cmd.Flags().GetBool("allow-public-ips")
+		if err != nil {
+			pterm.Error.Println("allow-public-ip flag error")
+			cmd.Usage()
+			return
+		}
+		if publicIPAllowed {
+			pterm.Warning.Println("Scanning public IPs should be done with care, use at your own risk")
 		}
 		// TODO: add cancel context
 		cidr, err := cmd.Flags().GetString("cidr")
 		if err != nil {
-			log.Error("CIDR flag error")
+			pterm.Error.Println("CIDR flag error")
 			cmd.Usage()
 			return
 		}
@@ -102,7 +111,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		serverUrl, err := cmd.Flags().GetString("server")
 		if err != nil {
-			fmt.Println("Error in server flag")
+			pterm.Error.Println("Error in server flag")
 			cmd.Usage()
 			return
 		}
@@ -114,17 +123,24 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 
 		csvPath, err = cmd.Flags().GetString("csv-output")
 		if err != nil {
-			fmt.Println("Error in csv-output flag")
+			pterm.Error.Println("Error in csv-output flag")
 			cmd.Usage()
 			return
 		}
 		initCSV()
 
+		serverTimeout, err := cmd.Flags().GetInt("timeout")
+		if err != nil {
+			pterm.Error.Println("error in timeout flag")
+			cmd.Usage()
+			return
+		}
+
 		ctx := context.Background()
 		if !disableServer {
-			StartServer(ctx, serverUrl)
+			StartServer(ctx, serverUrl, serverTimeout)
 		}
-		ScanCIDR(ctx, cidr, ports, serverUrl)
+		ScanCIDR(ctx, cidr, ports, serverUrl, publicIPAllowed)
 	},
 }
 
@@ -137,7 +153,8 @@ func init() {
 	// and all subcommands, e.g.:
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
-	scanCmd.Flags().Bool("nocolor", false, "Remove colors from output")
+	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
+	scanCmd.Flags().Bool("allow-public-ips",false,"allowing to scan public IPs")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
 		"Ports to scan. By default scans top 10 ports;"+
@@ -146,17 +163,18 @@ func init() {
 			"to scan a range of ports, insert range separated by colon (e.g. range 9000:9004) range is limited to max 1024 ports.")
 	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
+	scanCmd.Flags().Int("timeout", 10, "Duration of time to wait before closing the callback server, in secods")
 	createPrivateIPBlocks()
 }
 
-func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
-	hosts, err := Hosts(cidr)
+func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string, allowPublicIPs bool) {
+	hosts, err := Hosts(cidr, allowPublicIPs)
 	//if err is not nil cidr wasn't parse correctly or ip isn't private
 	if err != nil {
 		pterm.Error.Println("Failed to get hosts, what:", err)
 		//an error occurred and program should shut down, close the TCP server
-		if TCPServer != nil {
-			TCPServer.Stop()
+		if LDAPServer != nil {
+			LDAPServer.Stop()
 		}
 		return
 	}
@@ -167,8 +185,8 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 	// if there are no IPs in the hosts lists, close the TCP server
 	if len(hosts) == 0 {
 		pterm.Error.Println("No IP addresses in CIDR")
-		if TCPServer != nil {
-			TCPServer.Stop()
+		if LDAPServer != nil {
+			LDAPServer.Stop()
 		}
 		return
 	}
@@ -201,6 +219,13 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 
 	var wg sync.WaitGroup
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
+
+	// Loop1: (single go) take all ips, add ports and place in blocking channel, when done close the channel
+
+	// Loop2: (multi go) read ip+port from chan and start a go, once the channel is closed, the loop ends. when done, close the res chan
+
+	// Loop3: (single go) read all results from the res chan, when chan is closed finish
+
 	const maxGoroutines = 100
 	cnt := 0
 	for _, i := range hosts {
@@ -216,8 +241,8 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 		ScanPorts(i, serverUrl, ports, resChan, &wg)
 	}
 	wg.Wait()
-	if TCPServer != nil {
-		TCPServer.Stop()
+	if LDAPServer != nil {
+		LDAPServer.Stop()
 	}
 	PrintResults(resChan)
 }
@@ -233,13 +258,13 @@ func PrintResults(resChan chan string) {
 		log.Info(msg)
 	}
 
-	if TCPServer != nil && TCPServer.sChan != nil {
+	if LDAPServer != nil && LDAPServer.sChan != nil {
 		pterm.Println()
-		pterm.NewStyle(pterm.FgGreen).Printfln("Total callbacks: %d", len(TCPServer.sChan))
-		close(TCPServer.sChan)
-		for suc := range TCPServer.sChan {
+		pterm.NewStyle(pterm.FgGreen).Printfln("Total callbacks: %d", len(LDAPServer.sChan))
+		close(LDAPServer.sChan)
+		for suc := range LDAPServer.sChan {
 			fullSuc := strings.Split(suc, ",")
-			msg := fmt.Sprintf("Summary: Callback from %s", fullSuc[1])
+			msg := fmt.Sprintf("Summary: Callback from %s:%s", fullSuc[1], fullSuc[2])
 			pterm.Info.Println(msg)
 			log.Info(msg)
 		}
@@ -262,7 +287,7 @@ func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.Wai
 
 }
 
-func Hosts(cidr string) ([]string, error) {
+func Hosts(cidr string, allowPublicIPs bool) ([]string, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, err
@@ -270,8 +295,9 @@ func Hosts(cidr string) ([]string, error) {
 
 	var ips []string
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		// Only scan for private IP addresses. If IP is not private, skip.
-		if !isPrivateIP(ip) {
+
+		//if public ip scanning isn't allowed Only scan for private IP addresses. If IP is not private, terminate with error.
+		if !allowPublicIPs && !isPrivateIP(ip) {
 			badIPStatus := ip.String() + " IP address is not private"
 			pterm.Error.Println(badIPStatus)
 			log.Fatal(badIPStatus)

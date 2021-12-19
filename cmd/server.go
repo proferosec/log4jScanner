@@ -30,7 +30,7 @@ import (
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "run a local TCPServer server",
+	Short: "run a local LDAP server",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		serverUrl, err := cmd.Flags().GetString("server")
@@ -51,12 +51,12 @@ var serverCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(serverCmd)
+	//rootCmd.AddCommand(serverCmd)
 	serverCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 }
 
 func ServerStart(serverUrl string) {
-	StartServer(nil, serverUrl)
+	StartServer(nil, serverUrl, 10)
 	pterm.Info.Println("Press ctr-l-c to exit")
 	for {
 	}
@@ -69,8 +69,8 @@ func ServerStart(serverUrl string) {
 }
 
 func PrintServerResults(csvRecords [][]string) {
-	close(TCPServer.sChan)
-	for suc := range TCPServer.sChan {
+	close(LDAPServer.sChan)
+	for suc := range LDAPServer.sChan {
 		csvSuc := strings.Split(suc, ",")
 		msg := fmt.Sprintf("Summary: Callback from %s:%s", csvSuc[1], csvSuc[2])
 		pterm.Info.Println(msg)
