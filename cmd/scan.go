@@ -156,6 +156,13 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 
 	var wg sync.WaitGroup
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
+
+	// Loop1: (single go) take all ips, add ports and place in blocking channel, when done close the channel
+
+	// Loop2: (multi go) read ip+port from chan and start a go, once the channel is closed, the loop ends. when done, close the res chan
+
+	// Loop3: (single go) read all results from the res chan, when chan is closed finish
+
 	const maxGoroutines = 100
 	cnt := 0
 	for _, i := range hosts {
