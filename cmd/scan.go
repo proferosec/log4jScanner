@@ -28,9 +28,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//needed for "allow-public-ips" flag
-var publicIPAllowed bool
-
 // scanCmd represents the scan command
 var scanCmd = &cobra.Command{
 	Use:   "scan",
@@ -49,9 +46,9 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			cmd.Usage()
 			return
 		}
-		publicIPAllowed, err = cmd.Flags().GetBool("allow-public-ips")
+		publicIPAllowed, err := cmd.Flags().GetBool("allow-public-ips")
 		if err != nil {
-			log.Error("allow-public-ip flag error")
+			pterm.Error.Println("allow-public-ip flag error")
 			cmd.Usage()
 			return
 		}
@@ -111,7 +108,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		if !disableServer {
 			StartServer(ctx, serverUrl, serverTimeout)
 		}
-		ScanCIDR(ctx, cidr, ports, serverUrl)
+		ScanCIDR(ctx, cidr, ports, serverUrl, publicIPAllowed)
 	},
 }
 
@@ -135,8 +132,8 @@ func init() {
 	createPrivateIPBlocks()
 }
 
-func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string) {
-	hosts, err := Hosts(cidr)
+func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string, allowPublicIPs bool) {
+	hosts, err := Hosts(cidr, allowPublicIPs)
 	//if err is not nil cidr wasn't parse correctly or ip isn't private
 	if err != nil {
 		pterm.Error.Println("Failed to get hosts, what:", err)
@@ -246,7 +243,7 @@ func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.Wai
 
 }
 
-func Hosts(cidr string) ([]string, error) {
+func Hosts(cidr string, allowPublicIPs bool) ([]string, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, err
@@ -256,7 +253,7 @@ func Hosts(cidr string) ([]string, error) {
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
 
 		//if public ip scanning isn't allowed Only scan for private IP addresses. If IP is not private, terminate with error.
-		if !publicIPAllowed && !isPrivateIP(ip) {
+		if !allowPublicIPs && !isPrivateIP(ip) {
 			badIPStatus := ip.String() + " IP address is not private"
 			pterm.Error.Println(badIPStatus)
 			log.Fatal(badIPStatus)
