@@ -23,7 +23,7 @@ The tool does not send any exploits to the vulnerable hosts, and is designed to 
 
 ## Example
 
-![example](https://github.com/proferosec/log4jScanner/blob/main/movie.gif)
+![example](https://github.com/proferosec/log4jScanner/blob/staging/movie.gif)
 
 In this example we run the tool against the `192.168.1.59/29` subnet (which contains a vulnerable server). 
 
