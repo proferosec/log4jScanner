@@ -3,8 +3,9 @@ package cmd
 import "net"
 
 const (
-	startPortSlow = 1
-	endPortSlow   = 65535
+	startPortSlow      = 1
+	endPortSlow        = 65535
+	portRangeSizeLimit = 1024
 )
 
 var top100WebPorts = []int{
