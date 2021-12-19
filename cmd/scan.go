@@ -120,8 +120,8 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 	if err != nil {
 		pterm.Error.Println("Failed to get hosts, what:", err)
 		//an error occurred and program should shut down, close the TCP server
-		if TCPServer != nil {
-			TCPServer.Stop()
+		if LDAPServer != nil {
+			LDAPServer.Stop()
 		}
 		return
 	}
@@ -132,8 +132,8 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 	// if there are no IPs in the hosts lists, close the TCP server
 	if len(hosts) == 0 {
 		pterm.Error.Println("No IP addresses in CIDR")
-		if TCPServer != nil {
-			TCPServer.Stop()
+		if LDAPServer != nil {
+			LDAPServer.Stop()
 		}
 		return
 	}
@@ -171,8 +171,8 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 		ScanPorts(i, serverUrl, ports, resChan, &wg)
 	}
 	wg.Wait()
-	if TCPServer != nil {
-		TCPServer.Stop()
+	if LDAPServer != nil {
+		LDAPServer.Stop()
 	}
 	PrintResults(resChan)
 }
@@ -188,11 +188,11 @@ func PrintResults(resChan chan string) {
 		log.Info(msg)
 	}
 
-	if TCPServer != nil && TCPServer.sChan != nil {
+	if LDAPServer != nil && LDAPServer.sChan != nil {
 		pterm.Println()
-		pterm.NewStyle(pterm.FgGreen).Printfln("Total callbacks: %d", len(TCPServer.sChan))
-		close(TCPServer.sChan)
-		for suc := range TCPServer.sChan {
+		pterm.NewStyle(pterm.FgGreen).Printfln("Total callbacks: %d", len(LDAPServer.sChan))
+		close(LDAPServer.sChan)
+		for suc := range LDAPServer.sChan {
 			fullSuc := strings.Split(suc, ",")
 			msg := fmt.Sprintf("Summary: Callback from %s", fullSuc[1])
 			pterm.Info.Println(msg)

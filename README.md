@@ -1,5 +1,8 @@
 # log4jScanner
 
+![image](https://user-images.githubusercontent.com/13978578/146378036-eb7ca332-81a1-48a4-ac42-4f320d252ba0.png)
+
+
 ## Goals
 
 This tool provides you with the ability to scan internal (only) subnets for vulnerable log4j web services. 
@@ -74,7 +77,6 @@ You can use the tool to test for the top 100 HTTP\S ports using the `ports top10
 
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
-```
 
 it is possible to use a non-default configuration for the callback server
 ```bash
@@ -88,6 +90,7 @@ if you wish to disable the callback server, use `--noserver`
 * `--nocolor` provide output without color
 * `--ports` either top10 (default) or top100 (list of the 100 most common web ports)
 * `--noserver` only scan, do not use a local callback server
+* `--ports=slow` is currently disabled due to a bug, to be fixed in the next release
 
 ### Methods Used
 
