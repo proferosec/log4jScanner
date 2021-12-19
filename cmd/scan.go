@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -71,10 +72,41 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		CIDRName(cidr)
 
 		ports, err := cmd.Flags().GetString("ports")
-		if err != nil || (ports != "top100" && ports != "slow" && ports != "top10") {
+		if err != nil {
 			pterm.Error.Println("error in ports flag")
 			cmd.Usage()
 			return
+		}
+		if ports != "top100" && ports != "top10" {
+			// check if ports is a single number
+			if _, err = strconv.Atoi(ports); err == nil {
+			} else {
+				// check if ports are ints seperated by colon
+				r := strings.Split(ports, ":")
+				if len(r) != 2 {
+					pterm.Error.Println("error in ports flag")
+					cmd.Usage()
+					return
+				}
+
+				p1, err := strconv.Atoi(r[0])
+				if err != nil {
+					pterm.Error.Println("error in ports flag")
+					cmd.Usage()
+					return
+				}
+				p2, err := strconv.Atoi(r[1])
+				if err != nil {
+					pterm.Error.Println("error in ports flag")
+					cmd.Usage()
+					return
+				}
+				if p2 < p1 {
+					pterm.Error.Println("error in ports flag")
+					cmd.Usage()
+					return
+				}
+			}
 		}
 
 		serverUrl, err := cmd.Flags().GetString("server")
@@ -122,10 +154,13 @@ func init() {
 	scanCmd.Flags().String("cidr", "", "IP subnet to scan in CIDR notation (e.g. 192.168.1.0/24)")
 	scanCmd.Flags().Bool("noserver", false, "Do not use the internal TCP server, this overrides the server flag if present")
 	scanCmd.Flags().Bool("nocolor", false, "remove colors from output")
-	scanCmd.Flags().Bool("allow-public-ips",false,"allowing to scan public IPs")
+	scanCmd.Flags().Bool("allow-public-ips", false, "allowing to scan public IPs")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top10",
-		"Ports to scan. By default scans top 10 ports; 'top100' will scan the top 100 ports, 'slow' will scan all possible ports")
+		"Ports to scan. By default scans top 10 ports;"+
+			"'top100' will scan the top 100 ports,"+
+			"to scan a single insert a port number (e.g. 9000),"+
+			"to scan a range of ports, insert range separated by colon (e.g. range 9000:9004) range is limited to max 1024 ports.")
 	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
 	scanCmd.Flags().Int("timeout", 10, "Duration of time to wait before closing the callback server, in secods")
@@ -157,17 +192,27 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 	}
 
 	var ports []int
-	if portsFlag == "slow" {
-		pterm.Warning.Println("Slow flag is currently disabled, defaulting to top10")
-		ports = top10WebPorts
-		//ports = make([]int, endPortSlow-startPortSlow+1)
-		//for i := range ports {
-		//	ports[i] = startPortSlow + i
-		//}
-	} else if portsFlag == "top100" { // top100 will go over to 100 ports
+	if portsFlag == "top100" { // top100 will go over to 100 ports
 		ports = top100WebPorts
-	} else { // Fast scan - will go over the ports from the top 10 ports list.
+	} else if portsFlag == "top10" {
 		ports = top10WebPorts
+	} else if p, err := strconv.Atoi(portsFlag); err == nil { // a single port
+		ports = append(ports, p)
+	} else { // range of ports
+		portsRange := strings.Split(portsFlag, ":")
+		startPort, _ := strconv.Atoi(portsRange[0])
+		endPort, _ := strconv.Atoi(portsRange[1])
+		ports = make([]int, endPort-startPort+1)
+		for i := range ports {
+			ports[i] = startPort + i
+			if len(ports) > portRangeSizeLimit {
+				pterm.Error.Printfln("port range is limited to %v ports", portRangeSizeLimit)
+				if LDAPServer != nil {
+					LDAPServer.Stop()
+				}
+				return
+			}
+		}
 	}
 
 	resChan := make(chan string, 10000)
@@ -230,7 +275,6 @@ func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.Wai
 	defer wg.Done()
 	log.Infof("Trying: %s", ip)
 
-	// Slow scan will go over all ports from 1 to 65535
 	wgPorts := sync.WaitGroup{}
 	for _, port := range ports {
 		targetHttps := fmt.Sprintf("http://%s:%v", ip, port)
