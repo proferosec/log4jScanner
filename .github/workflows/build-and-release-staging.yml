@@ -19,6 +19,7 @@ jobs:
         run: |
           make init
           make sec || true
+          make build
           make release
       - name: Set env
         run: echo "VERSION=$(semver get alpha)" >> $GITHUB_ENV
