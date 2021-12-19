@@ -12,6 +12,8 @@ import (
 
 	"github.com/pterm/pterm"
 	log "github.com/sirupsen/logrus"
+
+	"log4jScanner/utils"
 )
 
 func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
@@ -33,7 +35,10 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 	param := url.Values{}
 	targetUrl := baseUrl.String()
 
-	traceHint := fmt.Sprintf("%s_%s", baseUrl.Hostname(), baseUrl.Port())
+	hintStr := fmt.Sprintf("Profero-log4jScanner-%s", utils.Version)
+	//hintB64 := base64.StdEncoding.EncodeToString([]byte(hintStr))
+	traceHint := fmt.Sprintf("%s_%s/%s", baseUrl.Hostname(), baseUrl.Port(), hintStr)
+	//traceHint := fmt.Sprintf("%s_%s", baseUrl.Hostname(), baseUrl.Port())
 
 	param.Add("x", fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, traceHint))
 	baseUrl.RawQuery = param.Encode()

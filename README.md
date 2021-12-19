@@ -66,6 +66,7 @@ You can use the tool to test for the top 100 HTTP\S ports using the `ports top10
 
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
+```
 
 it is possible to use a non-default configuration for the callback server
 ```bash
