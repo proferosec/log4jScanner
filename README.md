@@ -21,9 +21,23 @@ The tool does not send any exploits to the vulnerable hosts, and is designed to 
 | Linux  |[log4jscanner-linux.zip](https://github.com/proferosec/log4jScanner/releases/download/latest/log4jscanner-linux.zip) | [SHA256](https://github.com/proferosec/log4jScanner/releases/download/latest/linux.sha256.txt) |
 | MacOS  |[log4jscanner-darwin.zip](https://github.com/proferosec/log4jScanner/releases/download/latest/log4jscanner-darwin.zip) | [SHA256](https://github.com/proferosec/log4jScanner/releases/download/latest/darwin.sha256.txt) |
 
+### ChangeLog
+
+#### version 0.3.1
+
+* moved from a TCP server to a minimal LDAP server, this allows us to have accurate match between request and callback
+* added option to scan public IPs `--allow-public-ips`
+* added an option to scan a port range `--ports=9000:10000`
+* removed the option for slow scanning due to a bug
+* we are now using a more comprehensive list of possible headers to trigger the vulnerability
+* added a `--timeout` flag to control the timeout for the server shutdown
+* added a "hint" to the triggering message to make it easier to determine that these requests came from our tool `Profero-log4jScanner-v0.3.1`
+* various bug fixes
+
+
 ## Example
 
-![example](https://github.com/proferosec/log4jScanner/blob/staging/movie.gif)
+![example](https://github.com/proferosec/log4jScanner/blob/main/movie.gif)
 
 In this example we run the tool against the `192.168.1.59/29` subnet (which contains a vulnerable server). 
 
@@ -62,10 +76,19 @@ In order to identify which hosts are vulnerable just look up the word `SUCCESS` 
 Also, the tool generates a CSV file containing all the results, filter on `vulnerable` to get the vulnerable hosts.
 
 ### Additional usage options
-You can use the tool to test for the top 100 HTTP\S ports using the `ports top100` flag, or for the entire port range using `ports slow` - Keep in mind, using `ports slow` will take time to complete.
+You can use the tool to test for the top 100 HTTP\S ports using the `ports top100` flag, insert a single custom port or a range of ports (limited up to 1024 ports) .
 
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
+```
+
+```bash
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=9000
+```
+
+```bash
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=9000:9005
+```
 
 it is possible to use a non-default configuration for the callback server
 ```bash
@@ -77,13 +100,13 @@ if you wish to disable the callback server, use `--noserver`
 ### Available flags
 
 * `--nocolor` provide output without color
-* `--ports` either top10 (default) or top100 (list of the 100 most common web ports)
+* `--ports` either top10 (default), top100 (list of the 100 most common web ports), a custom single port or a range of ports
 * `--noserver` only scan, do not use a local callback server
 * `--timeout=10` is setting the server shutdown timeout to 10 seconds
 
 ### Methods Used
 
-Currently the tool uses the following areas to try and send an exploit
+Currently, the tool uses the following areas to try and send an exploit
 
 ### Test setup
 
