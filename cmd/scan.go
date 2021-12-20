@@ -162,6 +162,13 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		}
 		initCSV()
 
+		connectTimeout, err := cmd.Flags().GetInt("connect-timeout")
+		if err != nil {
+			pterm.Error.Println("error in connect-timeout flag")
+			cmd.Usage()
+			return
+		}
+
 		serverTimeout, err := cmd.Flags().GetInt("timeout")
 		if err != nil {
 			pterm.Error.Println("error in timeout flag")
@@ -176,7 +183,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		if !disableServer {
 			StartServer(ctx, serverUrl, serverTimeout)
 		}
-		ScanCIDR(ctx, cidr, ports, serverUrl, publicIPAllowed)
+		ScanCIDR(ctx, cidr, ports, serverUrl, publicIPAllowed, connectTimeout)
 	},
 }
 
@@ -199,11 +206,19 @@ func init() {
 			"to scan a range of ports, insert range separated by colon (e.g. range 9000:9004) range is limited to max 1024 ports.")
 	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
 		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
-	scanCmd.Flags().Int("timeout", 10, "Duration of time to wait before closing the callback server, in secods")
+	scanCmd.Flags().Int("timeout", 10, "Duration of time to wait before closing the callback server (in seconds)")
+	scanCmd.Flags().Int("connect-timeout", 2000, "Duration of time to wait for a response from each port while scanning (in milliseconds)")
 	createPrivateIPBlocks()
 }
 
-func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl string, allowPublicIPs bool) {
+func ScanCIDR(
+	ctx context.Context,
+	cidr string,
+	portsFlag string,
+	serverUrl string,
+	allowPublicIPs bool,
+	connectTimeout int,
+) {
 	hosts, err := Hosts(cidr, allowPublicIPs)
 	//if err is not nil cidr wasn't parse correctly or ip isn't private
 	if err != nil {
@@ -274,7 +289,7 @@ func ScanCIDR(ctx context.Context, cidr string, portsFlag string, serverUrl stri
 		wg.Add(1)
 		p.Increment()
 		// TODO: replace with go
-		ScanPorts(i, serverUrl, ports, resChan, &wg)
+		ScanPorts(i, serverUrl, ports, resChan, &wg, connectTimeout)
 	}
 	wg.Wait()
 	if LDAPServer != nil {
@@ -307,7 +322,7 @@ func PrintResults(resChan chan string) {
 	}
 }
 
-func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup) {
+func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup, connectTimeout int) {
 	defer wg.Done()
 	log.Infof("Trying: %s", ip)
 
@@ -316,8 +331,8 @@ func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.Wai
 		targetHttps := fmt.Sprintf("http://%s:%v", ip, port)
 		targetHttp := fmt.Sprintf("https://%s:%v", ip, port)
 		wgPorts.Add(2)
-		go ScanIP(targetHttp, server, &wgPorts, resChan)
-		go ScanIP(targetHttps, server, &wgPorts, resChan)
+		go ScanIP(targetHttp, server, &wgPorts, resChan, connectTimeout)
+		go ScanIP(targetHttps, server, &wgPorts, resChan, connectTimeout)
 	}
 	wgPorts.Wait()
 
