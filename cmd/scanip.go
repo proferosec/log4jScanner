@@ -33,7 +33,6 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 	log.Debugf("Target URL: %s", hostUrl)
 	baseUrl, err := url.Parse(hostUrl)
 	param := url.Values{}
-	targetUrl := baseUrl.String()
 
 	hintStr := fmt.Sprintf("Profero-log4jScanner-%s", utils.Version)
 	//hintB64 := base64.StdEncoding.EncodeToString([]byte(hintStr))
@@ -46,13 +45,14 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 	targetHeader := fmt.Sprintf("${jndi:ldap://%s/%s}", serverUrl, traceHint)
 	//log.Debugf("Target User-Agent: %s", targetUserAgent)
 	//log.Debugf("Target X-Api-Version: %s", targetHeader)
+	targetUrl := baseUrl.String()
 	request, err := http.NewRequest("GET", targetUrl, nil)
 	if err != nil {
 		pterm.Error.Println(err)
 		log.Fatal(err)
 	}
 	request.Header.Set("User-Agent", targetUserAgent)
-	addCommonHeaders(&request.Header,targetHeader)
+	addCommonHeaders(&request.Header, targetHeader)
 	response, err := client.Do(request)
 	if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
 		log.Debug(err)
