@@ -126,7 +126,7 @@ func initLog() {
 		LogPath = fmt.Sprintf("log4jScanner-%s-%s.log", CIDR, logTime)
 	} else if logPathFlag == "" {
 		LogP := fmt.Sprintf("log4jScanner-%s-%s.log", CIDR, logTime)
-		renameErr = utils.RenameFile(LogPath,LogP)
+		renameErr = utils.RenameFile(LogPath, LogP)
 		if renameErr != nil {
 			log.Error(renameErr)
 		}
@@ -135,7 +135,7 @@ func initLog() {
 		lSuffix := filepath.Ext(logPathFlag)
 		LogP := fmt.Sprintf("%s-%s-%s%s", strings.TrimSuffix(logPathFlag, lSuffix), CIDR, logTime, lSuffix)
 		if LogPath != "" {
-			renameErr = utils.RenameFile(LogPath,LogP)
+			renameErr = utils.RenameFile(LogPath, LogP)
 			if renameErr != nil {
 				log.Error(renameErr)
 			}
@@ -146,7 +146,7 @@ func initLog() {
 	if err != nil {
 		pterm.Warning.Println("failed to change log file location (using running folder), what:", err)
 		defaultFileName := "log4jScanner.log"
-		err = utils.RenameFile(LogPath,defaultFileName)
+		err = utils.RenameFile(LogPath, defaultFileName)
 		if err != nil {
 			log.Fatal(err)
 		}
