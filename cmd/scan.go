@@ -96,7 +96,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			// check if ports is a single number
 			if _, err = strconv.Atoi(ports); err == nil {
 			} else {
-				// check if ports are ints seperated by colon
+				// check if ports are integers seperated by colon
 				r := strings.Split(ports, ":")
 				if len(r) != 2 {
 					// check if ports are ints seperated by commas (list of ports)
@@ -117,6 +117,7 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 						}
 						return
 					}
+					// check every item is an integer
 					for _, ps := range l {
 						if _, err = strconv.Atoi(ps); err != nil {
 							pterm.Error.Println("error in ports flag")
