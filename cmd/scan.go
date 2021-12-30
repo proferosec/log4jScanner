@@ -96,42 +96,69 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 			// check if ports is a single number
 			if _, err = strconv.Atoi(ports); err == nil {
 			} else {
-				// check if ports are ints seperated by colon
+				// check if ports are integers seperated by colon
 				r := strings.Split(ports, ":")
 				if len(r) != 2 {
-					pterm.Error.Println("error in ports flag")
-					err = cmd.Usage()
-					if err != nil {
-						log.Fatal(err)
+					// check if ports are ints seperated by commas (list of ports)
+					l := strings.Split(ports, ",")
+					if len(l) < 1 {
+						pterm.Error.Println("error in ports flag")
+						err = cmd.Usage()
+						if err != nil {
+							log.Fatal(err)
+						}
+						return
 					}
-					return
-				}
-
-				p1, err := strconv.Atoi(r[0])
-				if err != nil {
-					pterm.Error.Println("error in ports flag")
-					err = cmd.Usage()
-					if err != nil {
-						log.Fatal(err)
+					if len(l) > portListSizeLimit {
+						pterm.Error.Printfln("number of ports is limited to %v ports", portListSizeLimit)
+						err = cmd.Usage()
+						if err != nil {
+							log.Fatal(err)
+						}
+						return
 					}
-					return
-				}
-				p2, err := strconv.Atoi(r[1])
-				if err != nil {
-					pterm.Error.Println("error in ports flag")
-					err = cmd.Usage()
-					if err != nil {
-						log.Fatal(err)
+					// check every item is an integer
+					for _, ps := range l {
+						if _, err = strconv.Atoi(ps); err != nil {
+							pterm.Error.Println("error in ports flag")
+							err = cmd.Usage()
+							if err != nil {
+								log.Fatal(err)
+							}
+							return
+						}
 					}
-					return
-				}
-				if p2 < p1 {
-					pterm.Error.Println("error in ports flag")
-					err = cmd.Usage()
+				} else {
+					// ports range
+					// check start port range is an integer
+					p1, err := strconv.Atoi(r[0])
 					if err != nil {
-						log.Fatal(err)
+						pterm.Error.Println("error in ports flag")
+						err = cmd.Usage()
+						if err != nil {
+							log.Fatal(err)
+						}
+						return
 					}
-					return
+					// check end port range is an integer
+					p2, err := strconv.Atoi(r[1])
+					if err != nil {
+						pterm.Error.Println("error in ports flag")
+						err = cmd.Usage()
+						if err != nil {
+							log.Fatal(err)
+						}
+						return
+					}
+					// check start port range is smaller than end port
+					if p2 < p1 {
+						pterm.Error.Println("error in ports flag")
+						err = cmd.Usage()
+						if err != nil {
+							log.Fatal(err)
+						}
+						return
+					}
 				}
 			}
 		}
@@ -200,12 +227,14 @@ func init() {
 	scanCmd.Flags().Bool("allow-public-ips", false, "allowing to scan public IPs")
 	scanCmd.Flags().String("server", "", "Callback server IP and port (e.g. 192.168.1.100:5555)")
 	scanCmd.Flags().String("ports", "top100",
-		"Ports to scan. By default scans top 10 ports;"+
-			"'top100' will scan the top 100 ports,"+
-			"to scan a single insert a port number (e.g. 9000),"+
-			"to scan a range of ports, insert range separated by colon (e.g. range 9000:9004) range is limited to max 1024 ports.")
+		"Ports to scan. By default scans top 10 ports; "+
+			"'top100' will scan the top 100 ports; "+
+			"To scan a single port insert a port number (e.g. 9000); "+
+			"To scan a range of ports, insert range separated by colon (e.g. 9000:9004) range is limited to max 1024 ports; "+
+			"To scan a list of ports, inserts port numbers separated by commas (e.g. 4000,5003,5882,9000) list is limited to max 1024 ports.")
 	scanCmd.Flags().String("csv-output", "log4jScanner-results.csv",
-		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv). By default will be saved in the running folder.")
+		"Set path (inc. filename) to save the CSV file containing the scan results (e.g /tmp/log4jScanner_results.csv)."+
+			" By default will be saved in the running folder.")
 	scanCmd.Flags().Int("timeout", 10, "Duration of time to wait before closing the callback server (in seconds)")
 	scanCmd.Flags().Int("connect-timeout", 2000, "Duration of time to wait for a response from each port while scanning (in milliseconds)")
 	createPrivateIPBlocks()
@@ -249,19 +278,30 @@ func ScanCIDR(
 		ports = top10WebPorts
 	} else if p, err := strconv.Atoi(portsFlag); err == nil { // a single port
 		ports = append(ports, p)
-	} else { // range of ports
+	} else { // range of ports or list of ports
 		portsRange := strings.Split(portsFlag, ":")
-		startPort, _ := strconv.Atoi(portsRange[0])
-		endPort, _ := strconv.Atoi(portsRange[1])
-		ports = make([]int, endPort-startPort+1)
-		for i := range ports {
-			ports[i] = startPort + i
-			if len(ports) > portRangeSizeLimit {
-				pterm.Error.Printfln("port range is limited to %v ports", portRangeSizeLimit)
-				if LDAPServer != nil {
-					LDAPServer.Stop()
+		// range of ports
+		if len(portsRange) == 2 {
+			startPort, _ := strconv.Atoi(portsRange[0])
+			endPort, _ := strconv.Atoi(portsRange[1])
+			ports = make([]int, endPort-startPort+1)
+			for i := range ports {
+				ports[i] = startPort + i
+				if len(ports) > portRangeSizeLimit {
+					pterm.Error.Printfln("port range is limited to %v ports", portRangeSizeLimit)
+					if LDAPServer != nil {
+						LDAPServer.Stop()
+					}
+					return
 				}
-				return
+			}
+		} else {
+			// list of ports
+			portsList := strings.Split(portsFlag, ",")
+			length := len(portsList)
+			ports = make([]int, length)
+			for i, port := range portsList {
+				ports[i], _ = strconv.Atoi(port)
 			}
 		}
 	}

@@ -6,6 +6,7 @@ const (
 	startPortSlow      = 1
 	endPortSlow        = 65535
 	portRangeSizeLimit = 1024
+	portListSizeLimit  = 1024
 )
 
 var top100WebPorts = []int{
