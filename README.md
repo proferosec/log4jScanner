@@ -23,16 +23,10 @@ The tool does not send any exploits to the vulnerable hosts, and is designed to 
 
 ### ChangeLog
 
-#### version 0.3.1
+#### version 0.3.2
 
-* moved from a TCP server to a minimal LDAP server, this allows us to have accurate match between request and callback
-* added option to scan public IPs `--allow-public-ips`
-* added an option to scan a port range `--ports=9000:10000`
-* removed the option for slow scanning due to a bug
-* we are now using a more comprehensive list of possible headers to trigger the vulnerability
-* added a `--timeout` flag to control the timeout for the server shutdown
-* added a "hint" to the triggering message to make it easier to determine that these requests came from our tool `Profero-log4jScanner-v0.3.1`
-* various bug fixes
+* added an option to scan a custom list of ports `--ports=1555,3030,8000,8080,9003`
+* added a `--connect-timeout` flag to control the time to wait for a response from each port while scanning
 
 
 ## Example
@@ -76,7 +70,7 @@ In order to identify which hosts are vulnerable just look up the word `SUCCESS` 
 Also, the tool generates a CSV file containing all the results, filter on `vulnerable` to get the vulnerable hosts.
 
 ### Additional usage options
-You can use the tool to test for the top 100 HTTP\S ports using the `ports top100` flag, insert a single custom port or a range of ports (limited up to 1024 ports) .
+You can use the tool to test for the top 100 HTTP\S ports, insert a single custom port, a range of ports, or a list of custom ports (limited up to 1024 ports).
 
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=top100
@@ -90,6 +84,10 @@ log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=9000
 log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=9000:9005
 ```
 
+```bash
+log4jscanner.exe scan --cidr 192.168.7.0/24 --ports=1555,3030,8000,8080,9003
+```
+
 it is possible to use a non-default configuration for the callback server
 ```bash
 log4jscanner.exe scan --cidr 192.168.7.0/24 --server=192.168.1.100:5000
@@ -100,9 +98,10 @@ if you wish to disable the callback server, use `--noserver`
 ### Available flags
 
 * `--nocolor` provide output without color
-* `--ports` either top10 (default), top100 (list of the 100 most common web ports), a custom single port or a range of ports
+* `--ports` either top10 (default), top100 (list of the 100 most common web ports), a custom single port, a range of ports, or a list of custom ports
 * `--noserver` only scan, do not use a local callback server
-* `--timeout=10` is setting the server shutdown timeout to 10 seconds
+* `--timeout=10` set the server shutdown timeout to 10 seconds
+* `--connect-timeout=2000` set the response timeout for each scanned port to 2000 milliseconds 
 
 ### Methods Used
 

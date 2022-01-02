@@ -16,16 +16,15 @@ import (
 	"log4jScanner/utils"
 )
 
-func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string) {
+func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string, connectTimeout int) {
 	defer wg.Done()
-	const timeoutInterval = 2
 
 	client := &http.Client{
-		Timeout: 2 * timeoutInterval * time.Second,
+		Timeout: 2 * time.Duration(connectTimeout) * time.Millisecond,
 		Transport: &http.Transport{
-			TLSHandshakeTimeout:   timeoutInterval * time.Second,
-			ResponseHeaderTimeout: timeoutInterval * time.Second,
-			ExpectContinueTimeout: timeoutInterval * time.Second,
+			TLSHandshakeTimeout:   time.Duration(connectTimeout) * time.Millisecond,
+			ResponseHeaderTimeout: time.Duration(connectTimeout) * time.Millisecond,
+			ExpectContinueTimeout: time.Duration(connectTimeout) * time.Millisecond,
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 		},
 	}
@@ -52,7 +51,7 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 		log.Fatal(err)
 	}
 	request.Header.Set("User-Agent", targetUserAgent)
-	addCommonHeaders(&request.Header,targetHeader)
+	addCommonHeaders(&request.Header, targetHeader)
 	response, err := client.Do(request)
 	if err != nil && !strings.Contains(err.Error(), "Client.Timeout") {
 		log.Debug(err)
