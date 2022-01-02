@@ -16,7 +16,7 @@ import (
 	"log4jScanner/utils"
 )
 
-func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string, connectTimeout int) {
+func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan string, connectTimeout int, chSync *ChanSync) {
 	defer wg.Done()
 
 	client := &http.Client{

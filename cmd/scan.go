@@ -268,7 +268,7 @@ func ScanCIDR(
 
 	resChan := make(chan string, 10000)
 
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(hosts)).WithTitle("Progress").Start()
 
 	// Loop1: (single go) take all ips, add ports and place in blocking channel, when done close the channel
@@ -278,20 +278,22 @@ func ScanCIDR(
 	// Loop3: (single go) read all results from the res chan, when chan is closed finish
 
 	const maxGoroutines = 100
-	cnt := 0
+	chansync := make(chan int, maxGoroutines)
+	chSync := ChanSync{chSync: chansync}
+	//cnt := 0
 	for _, i := range hosts {
-		cnt += 1
+		//cnt += 1
 		// TODO: replace ports flag with an ENUM
-		if cnt > maxGoroutines {
-			wg.Wait()
-			cnt = 0
-		}
-		wg.Add(1)
+		//if cnt > maxGoroutines {
+		//	wg.Wait()
+		//	cnt = 0
+		//}
+		//wg.Add(1)
 		p.Increment()
 		// TODO: replace with go
-		ScanPorts(i, serverUrl, ports, resChan, &wg, connectTimeout)
+		ScanPorts(i, serverUrl, ports, resChan, &chSync, connectTimeout)
 	}
-	wg.Wait()
+	//wg.Wait()
 	if LDAPServer != nil {
 		LDAPServer.Stop()
 	}
@@ -322,8 +324,8 @@ func PrintResults(resChan chan string) {
 	}
 }
 
-func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.WaitGroup, connectTimeout int) {
-	defer wg.Done()
+func ScanPorts(ip, server string, ports []int, resChan chan string, chSync *ChanSync, connectTimeout int) {
+	//defer wg.Done()
 	log.Infof("Trying: %s", ip)
 
 	wgPorts := sync.WaitGroup{}
@@ -331,8 +333,8 @@ func ScanPorts(ip, server string, ports []int, resChan chan string, wg *sync.Wai
 		targetHttps := fmt.Sprintf("http://%s:%v", ip, port)
 		targetHttp := fmt.Sprintf("https://%s:%v", ip, port)
 		wgPorts.Add(2)
-		go ScanIP(targetHttp, server, &wgPorts, resChan, connectTimeout)
-		go ScanIP(targetHttps, server, &wgPorts, resChan, connectTimeout)
+		go ScanIP(targetHttp, server, &wgPorts, resChan, connectTimeout, chSync)
+		go ScanIP(targetHttps, server, &wgPorts, resChan, connectTimeout, chSync)
 	}
 	wgPorts.Wait()
 
@@ -392,7 +394,7 @@ func createPrivateIPBlocks() {
 	for _, cidr := range privateIPBlocks {
 		_, block, err := net.ParseCIDR(cidr)
 		if err != nil {
-			log.Error("parse error on %q: %v", cidr, err)
+			log.Errorf("parse error on %q: %v", cidr, err)
 		}
 		privateIPs = append(privateIPs, block)
 	}
