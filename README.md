@@ -23,7 +23,7 @@ The tool does not send any exploits to the vulnerable hosts, and is designed to 
 
 ### ChangeLog
 
-#### version 0.3.3
+#### version 0.3.2
 
 * added an option to scan a custom list of ports `--ports=1555,3030,8000,8080,9003`
 * added a `--connect-timeout` flag to control the time to wait for a response from each port while scanning
