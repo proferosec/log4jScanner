@@ -192,7 +192,10 @@ For example: log4jScanner scan --cidr "192.168.0.1/24`,
 		connectTimeout, err := cmd.Flags().GetInt("connect-timeout")
 		if err != nil {
 			pterm.Error.Println("error in connect-timeout flag")
-			cmd.Usage()
+			err := cmd.Usage()
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 
