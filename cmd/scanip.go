@@ -31,6 +31,9 @@ func ScanIP(hostUrl string, serverUrl string, wg *sync.WaitGroup, resChan chan s
 
 	log.Debugf("Target URL: %s", hostUrl)
 	baseUrl, err := url.Parse(hostUrl)
+	if err != nil {
+		log.Debug(err)
+	}
 	param := url.Values{}
 
 	hintStr := fmt.Sprintf("Profero-log4jScanner-%s", utils.Version)
