@@ -105,7 +105,10 @@ if you wish to disable the callback server, use `--noserver`
 
 ### Methods Used
 
-Currently, the tool uses the following areas to try and send an exploit
+Currently, the tool uses the following areas to try and send an exploit:
+* Various `X-* headers` (we plan to enlarge these in the future)
+* URL parameter encoding
+* `User-Agent`
 
 ### Test setup
 
